@@ -1,0 +1,56 @@
+* 2-input NOR: inputs are A and B, output is Z 
+.subckt nor2 a b z
+MPD1 z a 0 0 NENH sw=8 sl=1
+MPD2 z b 0 0 NENH sw=8 sl=1
+MPU1 1 a vdd vdd PENH sw=10 sl=1
+MPU2 z b 1 vdd PENH sw=10 sl=1
+.ends
+
+* 2-input NAND: inputs are A and B, output is Z 
+.subckt nand2 a b z
+MPD1 z a 1 0 NENH sw=8 sl=1
+MPD2 1 b 0 0 NENH sw=8 sl=1
+MPU1 z a vdd vdd PENH sw=10 sl=1
+MPU2 z b vdd vdd PENH sw=10 sl=1
+.ends
+
+* 3-input NAND: inputs are A, B and C, output is Z
+.subckt nand3 a b c z
+MPD1 z a 1 0 NENH sw=8 sl=1
+MPD2 1 b 2 0 NENH sw=8 sl=1
+MPD3 2 c 0 0 NENH sw=8 sl=1
+MPU1 z a vdd vdd PENH sw=10 sl=1
+MPU2 z b vdd vdd PENH sw=10 sl=1
+MPU3 z c vdd vdd PENH sw=10 sl=1
+.ends
+
+* INVERTER: input is A, output is Z
+.subckt inv a z
+MPD1 z a 0 0 NENH sw=16 sl=1
+MPU1 z a vdd vdd PENH sw=16 sl=1
+.ends
+
+* 2-input OR: inputs are A and B, output is Z
+.subckt or2 a b z
+Xnor0 a b c nor2
+Xinv0 c z inv
+.ends
+
+* 2-input AND: inputs are A and B, output is Z
+.subckt and2 a b z
+Xnand0 a b c nand2
+Xinv0 c z inv
+.ends
+
+* 2-input XOR: inputs are A and B, output is Z
+.subckt xor2 a b z
+Xor0 a b c or2
+Xnand0 a b d nand2
+Xand0 c d z and2
+.ends
+
+* 2-input XNOR: inputs are A and B, output is Z
+.subckt xnor2 a b z
+Xxor0 a b c xor2
+Xinv c z inv
+.ends
