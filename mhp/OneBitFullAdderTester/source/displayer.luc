@@ -1,0 +1,97 @@
+module displayer (
+    input clk,  // 100MHz clock
+    input rst,  // reset
+    input ready,
+    input passed,
+    input checking,
+    output seg[8],  // LED segments
+    output sel[4]  // digit select
+  ) {
+  
+  .clk(clk), .rst(rst) {
+    counter ctr (#DIV(16), #SIZE(2), #TOP(3));
+    counter timer (#DIV(22), #SIZE(3), #TOP(5));
+  }
+  
+  decoder digit_dec (#WIDTH(2)); // digit decoder
+  
+  sig display_buffer[4][8]; // content to be displayed on the 7-segment displays
+
+  always {
+    display_buffer = {8b0, 8b0, 8b0, 8b0};
+    if (ready) {
+      if (passed) {
+        display_buffer = {
+          // 'PASS'
+          8b01110011,
+          8b01110111,
+          8b01101101,
+          8b01101101
+        };
+      }
+      
+      else {
+        display_buffer = {
+          // 'FAIL'
+          8b01110001,
+          8b01110111,
+          8b00110000,
+          8b00111000
+        };
+      }
+    }
+    
+    else {
+      // show two bars rotating as the testing animation
+      case (timer.value) {
+        0: display_buffer = {
+          8b00111000,
+          8b00000000,
+          8b00000000,
+          8b00000111
+        };
+        1: display_buffer = {
+          8b00011000,
+          8b00001000,
+          8b00000001,
+          8b00000011
+        };
+        2: display_buffer = {
+          8b00001000,
+          8b00001001,
+          8b00001001,
+          8b00000001
+        };
+        3: display_buffer = {
+          8b00000001,
+          8b00001001,
+          8b00001001,
+          8b00001000
+        };
+        4: display_buffer = {
+          8b00100001,
+          8b00000001,
+          8b00001000,
+          8b00001100
+        };
+        5: display_buffer = {
+          8b00110001,
+          8b00000000,
+          8b00000000,
+          8b00001110
+        };
+      }
+    }
+    
+    // get the value for one 7-segment display based on the clock
+    seg = ~display_buffer[~ctr.value];
+    
+    // show dot in the middle when the tester is checking the result
+    if (~ready & checking & (ctr.value == 1 | ctr.value == 2)) {
+      seg = ~(display_buffer[~ctr.value] | 8b01000000);
+    }
+    
+    digit_dec.in = ~ctr.value;  // decode the active digit to one-hot
+    sel = ~digit_dec.out;  // output the active digit
+  }
+}
