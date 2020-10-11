@@ -10,7 +10,7 @@ Team 03-2:
 - Cheow Wei Da Nicholas
 - Sun Kairan
 
-Poster and schematics are included in this repository. You can watch our video [here]().
+[Poster](poster.pdf) and [schematics](schematics/schematics.png) are included in this repository. You can watch our video [here](https://youtu.be/cUwy_Xbg1K8).
 
 ---
 
