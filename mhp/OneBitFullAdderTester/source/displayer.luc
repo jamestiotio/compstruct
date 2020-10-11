@@ -7,14 +7,14 @@ module displayer (
     output seg[8],  // LED segments
     output sel[4]  // digit select
   ) {
-  
+
   .clk(clk), .rst(rst) {
     counter ctr (#DIV(16), #SIZE(2), #TOP(3));
     counter timer (#DIV(22), #SIZE(3), #TOP(5));
   }
-  
+
   decoder digit_dec (#WIDTH(2)); // digit decoder
-  
+
   sig display_buffer[4][8]; // content to be displayed on the 7-segment displays
 
   always {
@@ -29,7 +29,7 @@ module displayer (
           8b01101101
         };
       }
-      
+
       else {
         display_buffer = {
           // 'FAIL'
@@ -40,7 +40,7 @@ module displayer (
         };
       }
     }
-    
+
     else {
       // show two bars rotating as the testing animation
       case (timer.value) {
@@ -82,15 +82,15 @@ module displayer (
         };
       }
     }
-    
+
     // get the value for one 7-segment display based on the clock
     seg = ~display_buffer[~ctr.value];
-    
+
     // show dot in the middle when the tester is checking the result
     if (~ready & checking & (ctr.value == 1 | ctr.value == 2)) {
       seg = ~(display_buffer[~ctr.value] | 8b01000000);
     }
-    
+
     digit_dec.in = ~ctr.value;  // decode the active digit to one-hot
     sel = ~digit_dec.out;  // output the active digit
   }

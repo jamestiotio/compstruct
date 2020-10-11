@@ -3,7 +3,7 @@ module tester (
     input outputs[2],  // {cout, s}
     output correct  // boolean output (1 is correct, 0 is wrong)
   ) {
-  
+
   sig expected[2];  // reference result from internal adder circuit
 
   always {

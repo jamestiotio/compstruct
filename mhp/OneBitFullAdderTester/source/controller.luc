@@ -8,9 +8,9 @@ module controller (
     output result_ready,  // result is ready
     output result  // result of the test (1 is passed, 0 is failed)
   ) {
-  
+
   tester tester(.inputs(adder_inputs), .outputs(adder_outputs));
-  
+
   .clk(clk) {
     .rst(rst) {
       dff done;  // test ended
@@ -21,7 +21,7 @@ module controller (
   always {
     failed.d = failed.q | (~tester.correct & do_test);  // check whether (test has already failed) or (one test case failed and test is enabled)
     done.d = done.q | end_test | failed.q;  // check whether (test already ended) or (end_test signal is triggered due to counter overflow) or (test already failed)
-    
+
     result_ready = done.q;
     result = ~failed.q;
   }

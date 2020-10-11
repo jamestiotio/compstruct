@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="OneBitFullAdderTester" board="Alchitry Au" language="Lucid" version="3">
   <files>
+    <src top="true">au_top.luc</src>
     <src>displayer.luc</src>
     <component>counter.luc</component>
-    <src top="true">au_top.luc</src>
-    <component>reset_conditioner.luc</component>
-    <component>decoder.luc</component>
     <src>tester.luc</src>
+    <component>reset_conditioner.luc</component>
     <src>controller.luc</src>
+    <component>decoder.luc</component>
     <constraint lib="true">alchitry.acf</constraint>
     <constraint lib="true">io.acf</constraint>
     <constraint lib="true">au.xdc</constraint>

@@ -10,68 +10,93 @@ module au_top (
     input io_button [5],    // 5 buttons on IO Shield
     input io_dip [3][8]     // DIP switches on IO Shield
   ) {
-  
+
   sig rst;                  // reset signal
-  
+
   sig end_test, adder_inputs[3], do_test;
   sig adder_outputs[2];
-  
+
   .clk(clk) {
     // The reset conditioner is used to synchronize the reset signal to the FPGA
     // clock. This ensures the entire FPGA comes out of reset at the same time.
     reset_conditioner reset_cond;
+    fsm state(.clk(clk), .rst(rst), #INIT(MANUAL)) = {MANUAL, AUTO};  // finite state machine to switch between manual and auto, with manual as default
     .rst(rst) {
       controller tester;
       displayer display;
     }
   }
-  
+
   sig auto_test;
+
   counter test_gen (#DIV(25), #SIZE(6));  // 6-bit test data generator: done | cout | a | b | cin | internal_time
-  
+
   always {
     reset_cond.in = ~rst_n; // input raw inverted reset signal
     rst = reset_cond.out;   // conditioned reset
-    
+
     led = 8h00;             // turn LEDs off
 
     usb_tx = usb_rx;        // echo the serial data (loop serial port)
-    
+
     io_led = 3x{{8h00}};    // turn LEDs off
     io_seg = 8hff;          // turn segments off
     io_sel = 4hf;           // select no digits
-    
+
     auto_test = io_dip[0][0];  // switch between manual or auto
     test_gen.rst = rst;
     test_gen.clk = clk & ~tester.result_ready;
-    
-    // auto test
-    if (auto_test) {
-      end_test = test_gen.value[5];  // halt the counter clock and output the result
-      adder_inputs = test_gen.value[4:2];  // use 2-4 as inputs for adder
-      do_test = (test_gen.value[1:0] == 2b10);  // only do the test when the last 2 digits are 2b10 so that there is enough time for the external adder to be ready (> Tpd)
-    }
-    
-    // manual test
-    else {
-      end_test = io_button[0];  // press UP button to stop the test
-      adder_inputs = io_dip[2][2:0];
-      do_test = io_button[1];  // press CENTER button to start the test
+
+    case (state.q) {    
+      state.AUTO:
+
+        if (!auto_test) {
+          state.d = state.MANUAL;
+        }
+
+        end_test = test_gen.value[5];  // halt the counter clock and output the result
+        adder_inputs = test_gen.value[4:2];  // use 2-4 as inputs for adder
+        do_test = (test_gen.value[1:0] == 2b10);  // only do the test when the last 2 digits are 2b10 so that there is enough time for the external adder to be ready (> Tpd)
+
+      state.MANUAL:
+
+        if (auto_test) {
+          state.d = state.AUTO;
+        }
+
+        end_test = io_button[0];  // press UP button to stop the test
+        adder_inputs = io_dip[2][2:0];
+        do_test = io_button[1];  // press CENTER button to start the test     
+
+      // MANUAL as default
+      default:
+
+        if (auto_test) {
+          state.d = state.AUTO;
+        }
+
+        else if (!auto_test) {
+          state.d = state.MANUAL;
+        }
+
+        end_test = io_button[0];  // press UP button to stop the test
+        adder_inputs = io_dip[2][2:0];
+        do_test = io_button[1];  // press CENTER button to start the test       
     }
     
     io_led[2][2:0] = adder_inputs;  // show adder's input using left LEDs
-    
+
     adder_outputs = io_dip[1][1:0];  // read adder's output
     io_led[1][1:0] = adder_outputs;  // show adder's output using the middle LEDs
-    
+
     // connect tester controller
     tester.adder_inputs = adder_inputs;
     tester.adder_outputs = adder_outputs;
     tester.end_test = end_test;
     tester.do_test = do_test;
-    
+
     io_led[0] = 8x{tester.result};  // show current result
-    
+
     // show on the 7-segment displays
     display.ready = tester.result_ready;
     display.passed = tester.result;
