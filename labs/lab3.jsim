@@ -76,7 +76,7 @@ Xselector ALUFN[0]#32 ALUFN[1]#32 out[31:0] out[31:0] 0#32 out[31:0] shift[31:0]
 
 * Part E: Multiplier Unit (MUL)
 * Note that this is an implementation of a simple array multiplier, as required by the lab handout
-* Further optimization in terms of speed improvement could be done
+* Further optimization in terms of speed and area usage improvement could be done
 * Optimized multiplier design options: radix-4 Booth recoder, Wallace tree, or binary tree
 * To generate the JSIM code for levels 1-29, run this script in Python:
 * >>> for i in range(1, 30):
