@@ -1,3 +1,5 @@
+* Lab 2: Adder
+
 .include "../lib/nominal.jsim"
 .include "../lib/lab2checkoff.jsim"
 .include "../lib/gates.jsim"

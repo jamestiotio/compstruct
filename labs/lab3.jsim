@@ -1,0 +1,257 @@
+* Lab 3: Arithmetic Logic Unit (ALU)
+
+.include "../lib/nominal.jsim"
+.include "../lib/stdcell.jsim"
+.include "../lib/lab3checkoff_10.jsim"
+
+* Half Adder Sub-Circuit
+.subckt HA a b s cout
+Xs a b s xor2
+Xcout a b cout and2
+.ends
+
+* Full Adder Sub-Circuit
+.subckt FA a b cin s cout
+Xxor0 a b xor0_out xor2
+Xxor1 xor0_out cin s xor2
+Xand0 xor0_out cin and0_out and2
+Xand1 a b and1_out and2
+Xor0 and0_out and1_out cout or2
+.ends
+
+* Part A: Adder / Subtractor Unit (ARITH)
+* Note that this is an implementation of a naive ripple-carry 32-bit adder, as required by the lab handout (least number of gates used, but longest propagation delay)
+* Optimized adder design options: carry-skip, hybrid carry-lookahead carry-select, optimum spanning tree, Lynch-Swartzlander, Brent-Kung, Kogge-Stone, hybrid Han-Carlson, Sklansky, Knowles, Ladner-Fischer, Kantabutra, Beaumont-Smith, or Ling
+.subckt adder32 ALUFN[0] A[31:0] B[31:0] S[31:0] z v n
+Xxor0 B[31:0] ALUFN[0]#32 XB[31:0] xor2
+Xbit0 A[0] XB[0] ALUFN[0] S[0] C[0] FA
+Xbits A[31:1] XB[31:1] C[30:0] S[31:1] C[31:1] FA
+
+* For output z
+Xz0 S[0:7] S[8:15] S[16:23] S[24:31] O[0:7] or4
+Xz1 O[0:1] O[2:3] O[4:5] O[6:7] output[0:1] or4
+Xz output[0] output[1] z nor2
+
+* For output v
+XAinvert A[31] Ainv[31] inverter
+XBinvert XB[31] XBinv[31] inverter
+XSinvert S[31] Sinv[31] inverter
+Xand0 A[31] XB[31] Sinv[31] and0_out and3
+Xand1 Ainv[31] XBinv[31] S[31] and1_out and3
+Xv and0_out and1_out v or2
+
+* For output n
+.connect S[31] n
+.ends
+
+* Part B: Compare Unit (CMP)
+.subckt compare32 ALUFN[2:1] z v n cmp[31:0]
+Xxor0 n v nv xor2
+Xor0 nv z nvz or2
+Xmux0 ALUFN[2] ALUFN[1] 0 nv z nvz cmp[0] mux4
+.connect cmp[31:1] 0
+.ends
+
+* Part C: Boolean Unit (BOOL)
+.subckt boole32 ALUFN[3:0] A[31:0] B[31:0] boole[31:0]
+Xmuxes A[31:0] B[31:0] ALUFN[0]#32 ALUFN[1]#32 ALUFN[2]#32 ALUFN[3]#32 boole[31:0] mux4
+.ends
+
+* Part D: Shifter Unit (SHIFT)
+* We do not implement a signed shift left arithmetic (SLA) since it is the same as a logical/unsigned shift left (SHL) - minimize redundancy
+* This is an implementation of an optimized version of the shifter unit (significantly less area usage by gates, slightly higher latency)
+* Optimization technique: use muxes to combine the 3 different circuits of SHL, SHR and SRA into one integrated circuit to avoid repetition
+* Overall area-delay product is lower for this optimized version
+.subckt shift32 ALUFN[1:0] A[31:0] B[4:0] shift[31:0]
+XSRA ALUFN[1] 0 A[31] SRA mux2
+XSHR0 ALUFN[0]#32 A[31:0] A[0:31] SHR[31:0] mux2
+Xbit4 B[4]#32 SHR[31:0] SHR[15:0] SRA#16 W[31:0] mux2
+Xbit3 B[3]#32 W[31:0] W[23:0] SRA#8 X[31:0] mux2
+Xbit2 B[2]#32 X[31:0] X[27:0] SRA#4 Y[31:0] mux2
+Xbit1 B[1]#32 Y[31:0] Y[29:0] SRA#2 Z[31:0] mux2
+Xbit0 B[0]#32 Z[31:0] Z[30:0] SRA SL[31:0] mux2
+XSHR1 ALUFN[0]#32 SL[31:0] SL[0:31] out[31:0] mux2
+Xselector ALUFN[0]#32 ALUFN[1]#32 out[31:0] out[31:0] 0#32 out[31:0] shift[31:0] mux4
+.ends
+
+* Part E: Multiplier Unit (MUL)
+* Note that this is an implementation of a simple array multiplier, as required by the lab handout
+* Further optimization in terms of speed improvement could be done
+* Optimized multiplier design options: radix-4 Booth recoder, Wallace tree, or binary tree
+* To generate the JSIM code for levels 1-29, run this script in Python:
+* >>> for i in range(1, 30):
+* ...     print("* Level %d" % i)
+* ...     print("Xlayer%d_and A[%d:0] B[%d]#%d L%d_and[%d:0] and2" % (i, 31-i, i, 32-i, i, 31-i))
+* ...     print("Xlayer%d L%d_sum[1] L%d_and[0] 0 P[%d] L%d_cout[0] FA" % (i, i-1, i, i, i))
+* ...     print("Xlayer%d_FA L%d_sum[%d:2] L%d_and[%d:1] L%d_cout[%d:0] L%d_sum[%d:1] L%d_cout[%d:1] FA" % (i, i-1, 32-i, i, 31-i, i, 30-i, i, 31-i, i, 31-i))
+* ...     print("\n")
+.subckt multiply32 A[31:0] B[31:0] P[31:0]
+* Level 0
+Xlayer0 A[0] B[0] P[0] and2
+Xlayer0_and A[31:1] B[0]#31 L0_sum[31:1] and2
+
+* Level 1
+Xlayer1_and A[30:0] B[1]#31 L1_and[30:0] and2
+Xlayer1 L0_sum[1] L1_and[0] 0 P[1] L1_cout[0] FA
+Xlayer1_FA L0_sum[31:2] L1_and[30:1] L1_cout[29:0] L1_sum[30:1] L1_cout[30:1] FA
+
+* Level 2
+Xlayer2_and A[29:0] B[2]#30 L2_and[29:0] and2
+Xlayer2 L1_sum[1] L2_and[0] 0 P[2] L2_cout[0] FA
+Xlayer2_FA L1_sum[30:2] L2_and[29:1] L2_cout[28:0] L2_sum[29:1] L2_cout[29:1] FA
+
+* Level 3
+Xlayer3_and A[28:0] B[3]#29 L3_and[28:0] and2
+Xlayer3 L2_sum[1] L3_and[0] 0 P[3] L3_cout[0] FA
+Xlayer3_FA L2_sum[29:2] L3_and[28:1] L3_cout[27:0] L3_sum[28:1] L3_cout[28:1] FA
+
+* Level 4
+Xlayer4_and A[27:0] B[4]#28 L4_and[27:0] and2
+Xlayer4 L3_sum[1] L4_and[0] 0 P[4] L4_cout[0] FA
+Xlayer4_FA L3_sum[28:2] L4_and[27:1] L4_cout[26:0] L4_sum[27:1] L4_cout[27:1] FA
+
+* Level 5
+Xlayer5_and A[26:0] B[5]#27 L5_and[26:0] and2
+Xlayer5 L4_sum[1] L5_and[0] 0 P[5] L5_cout[0] FA
+Xlayer5_FA L4_sum[27:2] L5_and[26:1] L5_cout[25:0] L5_sum[26:1] L5_cout[26:1] FA
+
+* Level 6
+Xlayer6_and A[25:0] B[6]#26 L6_and[25:0] and2
+Xlayer6 L5_sum[1] L6_and[0] 0 P[6] L6_cout[0] FA
+Xlayer6_FA L5_sum[26:2] L6_and[25:1] L6_cout[24:0] L6_sum[25:1] L6_cout[25:1] FA
+
+* Level 7
+Xlayer7_and A[24:0] B[7]#25 L7_and[24:0] and2
+Xlayer7 L6_sum[1] L7_and[0] 0 P[7] L7_cout[0] FA
+Xlayer7_FA L6_sum[25:2] L7_and[24:1] L7_cout[23:0] L7_sum[24:1] L7_cout[24:1] FA
+
+* Level 8
+Xlayer8_and A[23:0] B[8]#24 L8_and[23:0] and2
+Xlayer8 L7_sum[1] L8_and[0] 0 P[8] L8_cout[0] FA
+Xlayer8_FA L7_sum[24:2] L8_and[23:1] L8_cout[22:0] L8_sum[23:1] L8_cout[23:1] FA
+
+* Level 9
+Xlayer9_and A[22:0] B[9]#23 L9_and[22:0] and2
+Xlayer9 L8_sum[1] L9_and[0] 0 P[9] L9_cout[0] FA
+Xlayer9_FA L8_sum[23:2] L9_and[22:1] L9_cout[21:0] L9_sum[22:1] L9_cout[22:1] FA
+
+* Level 10
+Xlayer10_and A[21:0] B[10]#22 L10_and[21:0] and2
+Xlayer10 L9_sum[1] L10_and[0] 0 P[10] L10_cout[0] FA
+Xlayer10_FA L9_sum[22:2] L10_and[21:1] L10_cout[20:0] L10_sum[21:1] L10_cout[21:1] FA
+
+* Level 11
+Xlayer11_and A[20:0] B[11]#21 L11_and[20:0] and2
+Xlayer11 L10_sum[1] L11_and[0] 0 P[11] L11_cout[0] FA
+Xlayer11_FA L10_sum[21:2] L11_and[20:1] L11_cout[19:0] L11_sum[20:1] L11_cout[20:1] FA
+
+* Level 12
+Xlayer12_and A[19:0] B[12]#20 L12_and[19:0] and2
+Xlayer12 L11_sum[1] L12_and[0] 0 P[12] L12_cout[0] FA
+Xlayer12_FA L11_sum[20:2] L12_and[19:1] L12_cout[18:0] L12_sum[19:1] L12_cout[19:1] FA
+
+* Level 13
+Xlayer13_and A[18:0] B[13]#19 L13_and[18:0] and2
+Xlayer13 L12_sum[1] L13_and[0] 0 P[13] L13_cout[0] FA
+Xlayer13_FA L12_sum[19:2] L13_and[18:1] L13_cout[17:0] L13_sum[18:1] L13_cout[18:1] FA
+
+* Level 14
+Xlayer14_and A[17:0] B[14]#18 L14_and[17:0] and2
+Xlayer14 L13_sum[1] L14_and[0] 0 P[14] L14_cout[0] FA
+Xlayer14_FA L13_sum[18:2] L14_and[17:1] L14_cout[16:0] L14_sum[17:1] L14_cout[17:1] FA
+
+* Level 15
+Xlayer15_and A[16:0] B[15]#17 L15_and[16:0] and2
+Xlayer15 L14_sum[1] L15_and[0] 0 P[15] L15_cout[0] FA
+Xlayer15_FA L14_sum[17:2] L15_and[16:1] L15_cout[15:0] L15_sum[16:1] L15_cout[16:1] FA
+
+* Level 16
+Xlayer16_and A[15:0] B[16]#16 L16_and[15:0] and2
+Xlayer16 L15_sum[1] L16_and[0] 0 P[16] L16_cout[0] FA
+Xlayer16_FA L15_sum[16:2] L16_and[15:1] L16_cout[14:0] L16_sum[15:1] L16_cout[15:1] FA
+
+* Level 17
+Xlayer17_and A[14:0] B[17]#15 L17_and[14:0] and2
+Xlayer17 L16_sum[1] L17_and[0] 0 P[17] L17_cout[0] FA
+Xlayer17_FA L16_sum[15:2] L17_and[14:1] L17_cout[13:0] L17_sum[14:1] L17_cout[14:1] FA
+
+* Level 18
+Xlayer18_and A[13:0] B[18]#14 L18_and[13:0] and2
+Xlayer18 L17_sum[1] L18_and[0] 0 P[18] L18_cout[0] FA
+Xlayer18_FA L17_sum[14:2] L18_and[13:1] L18_cout[12:0] L18_sum[13:1] L18_cout[13:1] FA
+
+* Level 19
+Xlayer19_and A[12:0] B[19]#13 L19_and[12:0] and2
+Xlayer19 L18_sum[1] L19_and[0] 0 P[19] L19_cout[0] FA
+Xlayer19_FA L18_sum[13:2] L19_and[12:1] L19_cout[11:0] L19_sum[12:1] L19_cout[12:1] FA
+
+* Level 20
+Xlayer20_and A[11:0] B[20]#12 L20_and[11:0] and2
+Xlayer20 L19_sum[1] L20_and[0] 0 P[20] L20_cout[0] FA
+Xlayer20_FA L19_sum[12:2] L20_and[11:1] L20_cout[10:0] L20_sum[11:1] L20_cout[11:1] FA
+
+* Level 21
+Xlayer21_and A[10:0] B[21]#11 L21_and[10:0] and2
+Xlayer21 L20_sum[1] L21_and[0] 0 P[21] L21_cout[0] FA
+Xlayer21_FA L20_sum[11:2] L21_and[10:1] L21_cout[9:0] L21_sum[10:1] L21_cout[10:1] FA
+
+* Level 22
+Xlayer22_and A[9:0] B[22]#10 L22_and[9:0] and2
+Xlayer22 L21_sum[1] L22_and[0] 0 P[22] L22_cout[0] FA
+Xlayer22_FA L21_sum[10:2] L22_and[9:1] L22_cout[8:0] L22_sum[9:1] L22_cout[9:1] FA
+
+* Level 23
+Xlayer23_and A[8:0] B[23]#9 L23_and[8:0] and2
+Xlayer23 L22_sum[1] L23_and[0] 0 P[23] L23_cout[0] FA
+Xlayer23_FA L22_sum[9:2] L23_and[8:1] L23_cout[7:0] L23_sum[8:1] L23_cout[8:1] FA
+
+* Level 24
+Xlayer24_and A[7:0] B[24]#8 L24_and[7:0] and2
+Xlayer24 L23_sum[1] L24_and[0] 0 P[24] L24_cout[0] FA
+Xlayer24_FA L23_sum[8:2] L24_and[7:1] L24_cout[6:0] L24_sum[7:1] L24_cout[7:1] FA
+
+* Level 25
+Xlayer25_and A[6:0] B[25]#7 L25_and[6:0] and2
+Xlayer25 L24_sum[1] L25_and[0] 0 P[25] L25_cout[0] FA
+Xlayer25_FA L24_sum[7:2] L25_and[6:1] L25_cout[5:0] L25_sum[6:1] L25_cout[6:1] FA
+
+* Level 26
+Xlayer26_and A[5:0] B[26]#6 L26_and[5:0] and2
+Xlayer26 L25_sum[1] L26_and[0] 0 P[26] L26_cout[0] FA
+Xlayer26_FA L25_sum[6:2] L26_and[5:1] L26_cout[4:0] L26_sum[5:1] L26_cout[5:1] FA
+
+* Level 27
+Xlayer27_and A[4:0] B[27]#5 L27_and[4:0] and2
+Xlayer27 L26_sum[1] L27_and[0] 0 P[27] L27_cout[0] FA
+Xlayer27_FA L26_sum[5:2] L27_and[4:1] L27_cout[3:0] L27_sum[4:1] L27_cout[4:1] FA
+
+* Level 28
+Xlayer28_and A[3:0] B[28]#4 L28_and[3:0] and2
+Xlayer28 L27_sum[1] L28_and[0] 0 P[28] L28_cout[0] FA
+Xlayer28_FA L27_sum[4:2] L28_and[3:1] L28_cout[2:0] L28_sum[3:1] L28_cout[3:1] FA
+
+* Level 29
+Xlayer29_and A[2:0] B[29]#3 L29_and[2:0] and2
+Xlayer29 L28_sum[1] L29_and[0] 0 P[29] L29_cout[0] FA
+Xlayer29_FA L28_sum[3:2] L29_and[2:1] L29_cout[1:0] L29_sum[2:1] L29_cout[2:1] FA
+
+* Level 30
+Xlayer30_and A[1:0] B[30]#2 L30_and[1:0] and2
+Xlayer30 L29_sum[1] L30_and[0] 0 P[30] L30_cout[0] FA
+Xlayer30_FA L29_sum[2] L30_and[1] L30_cout[0] L30_sum[1] L30_cout[1] FA
+
+* Level 31
+Xlayer31_and A[0] B[31] L31_and[0] and2
+Xlayer31 L30_sum[1] L31_and[0] 0 P[31] L31_cout[0] FA
+.ends
+
+* Final ALU with all combined components
+.subckt alu ALUFN[5:0] A[31:0] B[31:0] alu[31:0] z v n
+Xadd ALUFN[0] A[31:0] B[31:0] addout[31:0] z v n adder32
+Xbool ALUFN[3:0] A[31:0] B[31:0] boolout[31:0] boole32
+Xshift ALUFN[1:0] A[31:0] B[4:0] shiftout[31:0] shift32
+Xcmp ALUFN[2:1] z v n cmpout[31:0] compare32
+Xmul A[31:0] B[31:0] mulout[31:0] multiply32
+Xselector ALUFN[1]#32 addout[31:0] mulout[31:0] addormul[31:0] mux2
+Xfinal ALUFN[4]#32 ALUFN[5]#32 addormul[31:0] boolout[31:0] shiftout[31:0] cmpout[31:0] alu[31:0] mux4
+.ends

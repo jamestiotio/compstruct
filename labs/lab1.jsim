@@ -1,3 +1,5 @@
+* Lab 1: CMOS
+
 .include "../lib/nominal.jsim"
 .include "../lib/lab1checkoff.jsim"
 .include "../lib/gates.jsim"
