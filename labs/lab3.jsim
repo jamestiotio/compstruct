@@ -33,12 +33,9 @@ Xz1 O[0:1] O[2:3] O[4:5] O[6:7] output[0:1] or4
 Xz output[0] output[1] z nor2
 
 * For output v
-XAinvert A[31] Ainv[31] inverter
-XBinvert XB[31] XBinv[31] inverter
-XSinvert S[31] Sinv[31] inverter
-Xand0 A[31] XB[31] Sinv[31] and0_out and3
-Xand1 Ainv[31] XBinv[31] S[31] and1_out and3
-Xv and0_out and1_out v or2
+* Optimized circuit for overflow bit: XOR the last 2 carries (C30 ⊕ C31)
+* Instead of (XA31 · XB31 · ¬S31) + (¬XA31 · ¬XB31 · S31)
+Xv C[30] C[31] v xor2
 
 * For output n
 .connect S[31] n
