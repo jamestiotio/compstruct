@@ -2,7 +2,9 @@
 
 .include "../lib/nominal.jsim"
 .include "../lib/stdcell.jsim"
-.include "../lib/lab3checkoff_10.jsim"
+
+* When only checking off for Lab #3, remember to uncomment this line below
+// .include "../lib/lab3checkoff_10.jsim"
 
 * Half Adder Sub-Circuit
 .subckt HA a b s cout
@@ -75,13 +77,7 @@ Xselector ALUFN[0]#32 ALUFN[1]#32 out[31:0] out[31:0] 0#32 out[31:0] shift[31:0]
 * Note that this is an implementation of a simple array multiplier, as required by the lab handout
 * Further optimization in terms of speed and area usage improvement could be done
 * Optimized multiplier design options: radix-4 Booth recoder, Wallace tree, or binary tree
-* To generate the JSIM code for levels 1-29, run this script in Python:
-* >>> for i in range(1, 30):
-* ...     print("* Level %d" % i)
-* ...     print("Xlayer%d_and A[%d:0] B[%d]#%d L%d_and[%d:0] and2" % (i, 31-i, i, 32-i, i, 31-i))
-* ...     print("Xlayer%d L%d_sum[1] L%d_and[0] 0 P[%d] L%d_cout[0] FA" % (i, i-1, i, i, i))
-* ...     print("Xlayer%d_FA L%d_sum[%d:2] L%d_and[%d:1] L%d_cout[%d:0] L%d_sum[%d:1] L%d_cout[%d:1] FA" % (i, i-1, 32-i, i, 31-i, i, 30-i, i, 31-i, i, 31-i))
-* ...     print("")
+* To generate the JSIM code for levels 1-29, run the lab3multiplier_generator.py script in Python
 .subckt multiply32 A[31:0] B[31:0] P[31:0]
 * Level 0
 Xlayer0 A[0] B[0] P[0] and2
@@ -242,7 +238,7 @@ Xlayer31_and A[0] B[31] L31_and[0] and2
 Xlayer31 L30_sum[1] L31_and[0] 0 P[31] L31_cout[0] FA
 .ends
 
-* Final ALU with all combined components
+* Final ALU With All Combined Components
 .subckt alu ALUFN[5:0] A[31:0] B[31:0] alu[31:0] z v n
 Xadd ALUFN[0] A[31:0] B[31:0] addout[31:0] z v n adder32
 Xbool ALUFN[3:0] A[31:0] B[31:0] boolout[31:0] boole32

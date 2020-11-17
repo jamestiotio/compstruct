@@ -1,4 +1,4 @@
-* Lab 2: Adder
+* Lab 2: 4-Bit Ripple-Carry Full Adder
 
 .include "../lib/nominal.jsim"
 .include "../lib/lab2checkoff.jsim"

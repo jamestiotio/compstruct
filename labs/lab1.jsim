@@ -1,9 +1,10 @@
-* Lab 1: CMOS
+* Lab 1: CMOS Logic Gate Design Using MOSFETs
 
 .include "../lib/nominal.jsim"
 .include "../lib/lab1checkoff.jsim"
 .include "../lib/gates.jsim"
 
+* F(A, B, C) = C + A·B
 .subckt F A B C Z
 MPD1 Q A 1 0 NENH sw=8 sl=1
 MPD2 1 B 0 0 NENH sw=8 sl=1
