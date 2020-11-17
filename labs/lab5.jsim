@@ -90,8 +90,8 @@ Xwasel wasel#5 rc[4:0] vdd#4 0 wa[4:0] mux2
 * WR and RA2SEL are 1s only for ST instruction
 * ASEL is 1 only for LDR instruction
 * WERF is 0 only for ST instruction (since WERF == 1 if values need to be stored in the register for all mathematical and logical operations)
-* MOE (Memory Output Enable) is 1 only for LD instruction
-* WR (Memory Write Enable) is 1 only for ST instruction
+* MOE (Memory Output Enable) is 1 only for LD instruction to read memory location specified by ma[31:0]
+* WR (Memory Write Enable) is 1 only for ST instruction to store into memory location specified by ma[31:0] at the end of the current cycle
 * If there is IRQ signal, we settle in the beta's subckt
 Xctl vdd 0 0 id[31:26]	            // one read port
 + zpcsel[2:0] wasel asel ra2sel bsel alufn[5:0] wdsel[1:0] werf moe xwr
