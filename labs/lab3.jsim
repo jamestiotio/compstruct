@@ -35,7 +35,7 @@ Xz1 O[0:1] O[2:3] O[4:5] O[6:7] output[0:1] or4
 Xz output[0] output[1] z nor2
 
 * For output v
-* Optimized circuit for overflow bit: XOR the last 2 carries (C30 ⊕ C31)
+* Optimized circuit for overflow bit: XOR the last 2 carries (C30 ^ C31)
 * Instead of (XA31 · XB31 · ¬S31) + (¬XA31 · ¬XB31 · S31)
 Xv C[30] C[31] v xor2
 

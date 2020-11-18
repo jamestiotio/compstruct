@@ -169,8 +169,8 @@ Xreset reset xwr 0 wr mux2
 * For BEQ: PCSEL = z ? 1 : 0
 * For BNE: PCSEL = z ? 0 : 1
 * This is an optimized implementation with a lower theoretical area-delay product since we relay most of the computation to process the selector bit (and thus, we require less multiplexers)
-* This circuit is using 1 inverter, 1 AND4 gate, 1 XOR2 gate, 1 XNOR2 gate, 1 AND3 gate and 3 MUX2, which has a theoretical area-delay product of 81.9 ns*μ^2
-* Instead of a naive approach of using 2 AND3 gates, 2 AND4 gates, 4 inverters, 6 MUX2 and 3 MUX4, which has a theoretical area-delay product of 246.48 ns*μ^2 (or 230.88 ns*μ^2 if we eliminate 1 inverter and 1 AND4 gate)
+* This circuit is using 1 inverter, 1 AND4 gate, 1 XOR2 gate, 1 XNOR2 gate, 1 AND3 gate and 3 MUX2, which has a theoretical area-delay product of 81.9 ns*u^2
+* Instead of a naive approach of using 2 AND3 gates, 2 AND4 gates, 4 inverters, 6 MUX2 and 3 MUX4, which has a theoretical area-delay product of 246.48 ns*u^2 (or 230.88 ns*u^2 if we eliminate 1 inverter and 1 AND4 gate)
 Xinv_id31 id[31] not_id[31] inverter
 Xeliminate_jmp not_id[31] id[30:28] nojmp and4
 Xeliminate_ldr id[27:26] noldr xor2
