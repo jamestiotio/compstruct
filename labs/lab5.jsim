@@ -29,7 +29,7 @@ Xmuxb s2 z e output mux2
 * bin(4) == 0b100
 Xaddfour 0 ia[31:0] 0#29 vdd 0#2 pcfour[31:0] throwaway_z throwaway_v throwaway_n adder32
 
-* PC + 4 + 4 * SEXT(C) as pcbig
+* PC + 4 + 4 * SEXT(C) as pcbig (also called as branch-offset input)
 * mul(C,4) == lshift(C,2)
 .connect c[15] sext[31:16]
 Xbuff0 c[15:0] sext[15:0] buffer
