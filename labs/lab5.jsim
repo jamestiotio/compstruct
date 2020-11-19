@@ -131,7 +131,7 @@ Xctl vdd 0 0 id[31:26]	            // one read port
 +  0b000000000000001100             // opcode=0b100000 ADD
 +  0b000000000000101100             // opcode=0b100001 SUB
 +  0b000000000001001100             // opcode=0b100010 MUL
-+  0b011100000000000100             // opcode=0b100011 DIV (unimplemented)
++  0b011100000000000100             // opcode=0b100011 DIV (unimplemented - possible hardware-based circuit algorithms: restoring array, non-restoring array, series expansion or Newton-Raphson)
 +  0b000000011001101100             // opcode=0b100100 CMPEQ
 +  0b000000011010101100             // opcode=0b100101 CMPLT
 +  0b000000011011101100             // opcode=0b100110 CMPLE
@@ -147,7 +147,7 @@ Xctl vdd 0 0 id[31:26]	            // one read port
 +  0b000000100000001100             // opcode=0b110000 ADDC
 +  0b000000100000101100             // opcode=0b110001 SUBC
 +  0b000000100001001100             // opcode=0b110010 MULC
-+  0b011100000000000100             // opcode=0b110011 DIVC (unimplemented)
++  0b011100000000000100             // opcode=0b110011 DIVC (unimplemented - possible hardware-based circuit algorithms: restoring array, non-restoring array, series expansion or Newton-Raphson)
 +  0b000000111001101100             // opcode=0b110100 CMPEQC
 +  0b000000111010101100             // opcode=0b110101 CMPLTC
 +  0b000000111011101100             // opcode=0b110110 CMPLEC
