@@ -11,8 +11,8 @@
 
 // Begin Defining Utility Gates
 .subckt and5 a b c d e output
-Xanda a b c d x and4
-Xandb x e output and2
+Xand0 a b c d x and4
+Xand1 x e output and2
 .ends
 
 .subckt mux5 s2 s1 s0 a b c d e output
@@ -37,9 +37,10 @@ Xaddsext 0 sextfour[31:0] pcfour[31:0] pcbig[31:0] another_throwaway_z another_t
 
 * Supervisor bit
 * New PC31 is 1 only when both old PC31 and JT31 are 1s
-Xand ia[31] jt[31] supervisor and2
+* This is to ensure that JMP instructions can only clear or leave the supervisor bit unchanged
+Xjmp ia[31] jt[31] supervisor and2
 
-* 5-to-1 multiplexer
+* PC's 5-to-1 input multiplexer with PCSEL[2:0] as selector bits
 Xmux pcsel[2]#32 pcsel[1]#32 pcsel[0]#32 pcfour[31:0] pcbig[31:0] supervisor jt[30:2] 0#2 illop[31:0] xadr[31:0] original_output[31:0] mux5
 
 * Combine output with reset signal (if reset == 1, reset to 0x80000000 where output[31] == 1)
