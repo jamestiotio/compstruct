@@ -31,9 +31,7 @@ Xaddfour 0 ia[31:0] 0#29 vdd 0#2 pcfour[31:0] throwaway_z throwaway_v throwaway_
 
 * PC + 4 + 4 * SEXT(C) as pcbig (also called as branch-offset input)
 * mul(C,4) == lshift(C,2)
-.connect c[15] sext[31:16]
-Xbuff0 c[15:0] sext[15:0] buffer
-Xbuff1 sext[29:0] sextfour[31:2] buffer
+Xbuffer c[29:0] sextfour[31:2] buffer
 .connect 0 sextfour[1:0]
 Xaddsext 0 sextfour[31:0] pcfour[31:0] pcbig[31:0] another_throwaway_z another_throwaway_v another_throwaway_n adder32
 
@@ -190,7 +188,7 @@ Xillop vdd 0#28 vdd 0#2 illop[31:0] buffer
 Xxadr vdd 0#27 vdd 0#3 xadr[31:0] buffer
 
 * Apply sign extension to id[15:0]
-Xsextc0 id[15]#16 sextc[31:16] buffer
+.connect id[15] sextc[31:16]
 Xsextc1 id[15:0] sextc[15:0] buffer
 
 * Add pre-defined components: PC, REGFILE & CTL
