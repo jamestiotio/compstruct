@@ -4,8 +4,8 @@
 // Returns a word whose two low-order 4-bit digits are Bulls & Cows.
 
 int count_bull_cows(int a, int b) {
-  int bulls;                  // number of bulls
-  int cows;                   // number of cows
+  int bulls;                            // number of bulls
+  int cows;                             // number of cows
   int i, j, btemp, atry, btry, mask;    // temp vars
 
   // Compute Bulls: check each of the four 4-bit digits in turn
