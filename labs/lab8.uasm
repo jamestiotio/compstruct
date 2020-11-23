@@ -24,7 +24,7 @@
 ||| ELLOHAY
 ||| 
 
-.include beta.uasm		| Define Beta instructions, etc.
+.include ../lib/beta.uasm		| Define Beta instructions, etc.
 .options clock tty
 
 ||| The following code is a primitive but complete timesharing kernel
