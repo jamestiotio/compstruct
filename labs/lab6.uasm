@@ -1,20 +1,167 @@
-| include instruction macros and test jig
+| Include instruction macros and test jig
 .include ../lib/beta.uasm
 .include ../lib/lab6checkoff.uasm
 
-count_bull_cows:         | your subroutine must have this name
-    PUSH(LP)         | standard subroutine entry sequence
+count_bull_cows:        | Subroutine must have this name
+    | Standard subroutine entry sequence
+    PUSH(LP)
     PUSH(BP)
     MOVE(SP, BP)
-    | PUSH any registers (besides R0) used by your code
 
-    | your code here, leave score in R0
+    | PUSH all registers to store variables used by this subroutine
+    | Technically, we do not need so many registers as specified here
+    | However, I separate the usage of each register as per their human-readable names for easier understanding of the assembly code
+    | For optimization purposes, a minimum of 12 registers could be used (registers 11-20 can be "combined" to only registers 11-12 as temporary registers with skillful swapping techniques)
+    PUSH(R1)
+    PUSH(R2)
+    PUSH(R3)
+    PUSH(R4)
+    PUSH(R5)
+    PUSH(R6)
+    PUSH(R7)
+    PUSH(R8)
+    PUSH(R9)
+    PUSH(R10)
+    PUSH(R11)
+    PUSH(R12)
+    PUSH(R13)
+    PUSH(R14)
+    PUSH(R15)
+    PUSH(R16)
+    PUSH(R17)
+    PUSH(R18)
+    PUSH(R19)
+    PUSH(R20)
 
-    | POP saved registers
-    MOVE(BP,SP)        | standard subroutine exit sequence
+    | Assign human-readable names to the internal registers
+    bulls = R1
+    cows = R2
+    a = R3
+    b = R4
+    i = R5
+    j = R6
+    btemp = R7
+    atry = R8
+    btry = R9
+    mask = R10
+    anmask = R11
+    bnmask = R12
+    anmask_equals_bnmask = R13
+    iterator_less_than_4 = R14
+    digit_is_a_bull = R15
+    atry_equals_btry = R16
+    inner_iterator_less_than_4 = R17
+    sum_of_cows_and_bulls = R18
+    cows_plus_bulls_leq_than_4 = R19
+    shifted_bulls = R20
+
+    | Load function arguments a and b into R3 and R4 respectively
+    GETFRAME(-12, a)
+    GETFRAME(-16, b)
+
+    | Initialize register values
+    CMOVE(0, bulls)
+    CMOVE(0, cows)
+    CMOVE(0xF, mask)
+
+    | Initialize iterator
+    CMOVE(0, i)
+
+    | Compute Bulls
+    count_bulls:
+        AND(a, mask, anmask)                            | a & mask
+        AND(b, mask, bnmask)                            | b & mask
+        CMPEQ(anmask, bnmask, anmask_equals_bnmask)     | Check if (a & mask) == (b & mask)
+        BEQ(anmask_equals_bnmask, bull_mask_shift)      | If anmask_equals_bnmask == 0, branch to bull_mask_shift
+        ADDC(bulls, 1, bulls)                           | bulls = bulls + 1
+        OR(a, mask, a)                                  | a |= mask
+        OR(b, mask, b)                                  | b |= mask
+        
+        bull_mask_shift:
+            SHLC(mask, 4, mask)                         | mask <<= 4
+        
+        ADDC(i, 1, i)                                   | i++
+        CMPLTC(i, 4, iterator_less_than_4)              | Check if iterator i < 4
+        BNE(iterator_less_than_4, count_bulls)          | If iterator_less_than_4 == 1, run count_bulls again
+    
+    | Re-initialize iterator value
+    CMOVE(0, i)
+
+    | Compute Cows
+    count_cows:
+        ANDC(a, 0xF, atry)                              | atry = a & 0xF
+        SHRC(a, 4, a)                                   | a >>= 4
+
+        CMPEQC(atry, 0xF, digit_is_a_bull)              | Check if atry == 0xF
+        BNE(digit_is_a_bull, increment_iterator)        | If digit_is_a_bull == 1, branch to increment_iterator
+
+        MOVE(b, btemp)                                  | btemp = b
+        CMOVE(0xF, mask)                                | mask = 0xF
+        CMOVE(0, j)                                     | j = 0
+
+        iterative_cow_check:
+            ANDC(btemp, 0xF, btry)                      | btry = btemp & 0xF
+            SHRC(btemp, 4, btemp)                       | btemp >>= 4
+            CMPEQC(atry, btry, atry_equals_btry)        | Check if atry == btry
+            BEQ(atry_equals_btry, cow_mask_shift)       | If atry_equals_btry == 0, branch to cow_mask_shift
+
+            ADDC(cows, 1, cows)                         | cows = cows + 1
+            OR(b, mask, b)                              | b |= mask
+
+            BR(increment_iterator)                      | Break out of current inner iterative_cow_check for loop
+
+            cow_mask_shift:
+                SHLC(mask, 4, mask)                     | mask <<= 4
+            
+            ADDC(j, 1, j)                               | j++
+            CMPLTC(j, 4, inner_iterator_less_than_4)    | Check if iterator j < 4
+            BNE(inner_iterator_less_than_4, iterative_cow_check)    | If inner_iterator_less_than_4 == 1, run iterative_cow_check again
+
+        increment_iterator:
+            ADDC(i, 1, i)                               | i++
+            CMPLTC(i, 4, iterator_less_than_4)          | Check if iterator i < 4
+            BNE(iterator_less_than_4, count_cows)       | If iterator_less_than_4 == 1, run count_cows again
+
+    | Compute actual output and leave output score output in R0
+    ADD(bulls, cows, sum_of_cows_and_bulls)
+    CMPLEC(sum_of_cows_and_bulls, 4, cows_plus_bulls_leq_than_4)    | Check if (cows + bulls) <= 4
+    BNE(cows_plus_bulls_leq_than_4, return_output)                  | If (cows + bulls) <= 4, branch to return_output
+    CMOVE(0xFFFFFFFF, R0)                                           | Set error value as default output in R0
+    BR(end_of_output)
+
+    return_output:
+        SHLC(bulls, 4, shifted_bulls)
+        ADD(shifted_bulls, cows, R0)                                | Put output in R0
+
+    end_of_output:  | Pass
+
+    | POP all saved registers in reverse order of stack (LIFO)
+    POP(R20)
+    POP(R19)
+    POP(R18)
+    POP(R17)
+    POP(R16)
+    POP(R15)
+    POP(R14)
+    POP(R13)
+    POP(R12)
+    POP(R11)
+    POP(R10)
+    POP(R9)
+    POP(R8)
+    POP(R7)
+    POP(R6)
+    POP(R5)
+    POP(R4)
+    POP(R3)
+    POP(R2)
+    POP(R1)
+
+    | Standard subroutine exit sequence
+    MOVE(BP, SP)
     POP(BP)
     POP(LP)
     RTN()
 
-StackBase: LONG(.+4)     | Pointer to bottom of stack
-    . = .+0x1000     | Reserve space for stack...
+StackBase: LONG(.+4)    | Pointer to bottom of stack
+    . = .+0x1000        | Reserve space for stack...
