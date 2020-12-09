@@ -4,7 +4,7 @@
 
 * Do not include nominal.jsim and stdcell.jsim again since it will cause duplicate device name errors (they are already imported by lab3.jsim)
 * Remember to exclude the lab3checkoff_10.jsim file in the lab3.jsim dependency file
-* Order of include lines are important so as to not encounter any errors of missing dependencies
+* Order of include lines is important so as to not encounter any errors of missing dependencies
 // .include "../lib/nominal.jsim"
 // .include "../lib/stdcell.jsim"
 .include "../lib/lab5checkoff.jsim"
