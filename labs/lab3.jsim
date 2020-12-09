@@ -3,7 +3,7 @@
 .include "../lib/nominal.jsim"
 .include "../lib/stdcell.jsim"
 
-* When only checking off for Lab #3, remember to uncomment this line below
+* When only checking off for Lab #3 (and not Lab #5), remember to uncomment this line below
 // .include "../lib/lab3checkoff_10.jsim"
 
 * Half Adder Sub-Circuit

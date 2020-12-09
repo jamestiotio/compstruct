@@ -1,0 +1,28 @@
+// Program Counter Circuitry
+.subckt pc clk reset pcsel[2:0] xadr[31:0] illop[31:0] jt[31:0] c[31:0]
++ ia[31:0] pcbig[31:0] pcfour[31:0]
+
+* PC + 4 as pcfour
+* bin(4) == 0b100
+Xaddfour 0 ia[31:0] 0#29 vdd 0#2 pcfour[31:0] throwaway_z throwaway_v throwaway_n adder32
+
+* PC + 4 + 4 * SEXT(C) as pcbig (also called as branch-offset input)
+* mul(C,4) == lshift(C,2)
+Xbuffer c[29:0] sextfour[31:2] buffer
+.connect 0 sextfour[1:0]
+Xaddsext 0 sextfour[31:0] pcfour[31:0] pcbig[31:0] another_throwaway_z another_throwaway_v another_throwaway_n adder32
+
+* Supervisor bit
+* New PC31 is 1 only when both old PC31 and JT31 are 1s
+* This is to ensure that JMP instructions can only clear or leave the supervisor bit unchanged
+Xjmp ia[31] jt[31] supervisor and2
+
+* PC's 5-to-1 input multiplexer with PCSEL[2:0] as selector bits
+Xmux pcsel[2]#32 pcsel[1]#32 pcsel[0]#32 pcfour[31:0] pcbig[31:0] supervisor jt[30:2] 0#2 illop[31:0] xadr[31:0] original_output[31:0] mux5
+
+* Combine output with reset signal (if reset == 1, reset to 0x80000000 where output[31] == 1)
+Xreset reset#32 original_output[31:0] vdd 0#31 output[31:0] mux2
+
+* Add D-type latch (data register) for memory, so that only when there is a rising CLK edge, d -> q and thus output -> ia
+Xpcreg output[31:0] clk#32 ia[31:0] dreg
+.ends

@@ -1,0 +1,102 @@
+// Control Logic Unit (CU) Circuitry
+.subckt ctl reset z id[31:26] ra2sel bsel alufn[5:0] wdsel[1:0] werf moe wr
++ pcsel[2:0] wasel asel
+
+* Implement this as ROM: https://www.dropbox.com/s/2txzo6r3aeynguy/CU_2.png
+* Follow OPCODEs specified by the official Beta documentation
+* We set PCSEL as bin(3) == 0b011, WASEL as 1 and WERF as 1 if it is an illegal/unimplemented operation (raise exception if non-existent OPCODE)
+* Otherwise:
+* For Type 1 (OP) instructions, we set BSEL as 0
+* For Type 2 (OPC) instructions, we set BSEL as 1
+* WDSEL is 01 for all valid instructions except for LD/LDR (10) and ST (00) - this is because WDSEL == 01 would get the output from ALU instead of from data memory
+* WR and RA2SEL are 1s only for ST instruction
+* ASEL is 1 only for LDR instruction
+* WERF is 0 only for ST instruction (since WERF == 1 if values need to be stored in the register for all mathematical and logical operations)
+* MOE (Memory Output Enable) is 1 only for LD instruction to read memory location specified by ma[31:0]
+* WR (Memory Write Enable) is 1 only for ST instruction to store into memory location specified by ma[31:0] at the end of the current cycle
+* If there is IRQ signal, we settle in the beta's subckt
+Xctl vdd 0 0 id[31:26]	            // one read port
++ zpcsel[2:0] wasel asel ra2sel bsel alufn[5:0] wdsel[1:0] werf moe xwr
++ $memory width=18 nlocations=64 contents=(
++  0b011100000000000100             // opcode=0b000000
++  0b011100000000000100             // opcode=0b000001
++  0b011100000000000100             // opcode=0b000010
++  0b011100000000000100             // opcode=0b000011
++  0b011100000000000100             // opcode=0b000100
++  0b011100000000000100             // opcode=0b000101
++  0b011100000000000100             // opcode=0b000110
++  0b011100000000000100             // opcode=0b000111
++  0b011100000000000100             // opcode=0b001000
++  0b011100000000000100             // opcode=0b001001
++  0b011100000000000100             // opcode=0b001010
++  0b011100000000000100             // opcode=0b001011
++  0b011100000000000100             // opcode=0b001100
++  0b011100000000000100             // opcode=0b001101
++  0b011100000000000100             // opcode=0b001110
++  0b011100000000000100             // opcode=0b001111
++  0b011100000000000100             // opcode=0b010000
++  0b011100000000000100             // opcode=0b010001
++  0b011100000000000100             // opcode=0b010010
++  0b011100000000000100             // opcode=0b010011
++  0b011100000000000100             // opcode=0b010100
++  0b011100000000000100             // opcode=0b010101
++  0b011100000000000100             // opcode=0b010110
++  0b011100000000000100             // opcode=0b010111
++  0b000000100000010110             // opcode=0b011000 LD
++  0b000001100000000001             // opcode=0b011001 ST
++  0b011100000000000100             // opcode=0b011010
++  0b010000000000000100             // opcode=0b011011 JMP
++  0b011100000000000100             // opcode=0b011100
++  0b000000000000000100             // opcode=0b011101 BEQ
++  0b000000000000000100             // opcode=0b011110 BNE
++  0b000010001101010110             // opcode=0b011111 LDR
++  0b000000000000001100             // opcode=0b100000 ADD
++  0b000000000000101100             // opcode=0b100001 SUB
++  0b000000000001001100             // opcode=0b100010 MUL
++  0b011100000000000100             // opcode=0b100011 DIV (unimplemented - possible hardware-based circuit algorithms: restoring array, non-restoring array, series expansion or Newton-Raphson)
++  0b000000011001101100             // opcode=0b100100 CMPEQ
++  0b000000011010101100             // opcode=0b100101 CMPLT
++  0b000000011011101100             // opcode=0b100110 CMPLE
++  0b011100000000000100             // opcode=0b100111
++  0b000000001100001100             // opcode=0b101000 AND
++  0b000000001111001100             // opcode=0b101001 OR
++  0b000000001011001100             // opcode=0b101010 XOR
++  0b011100000000000100             // opcode=0b101011
++  0b000000010000001100             // opcode=0b101100 SHL
++  0b000000010000101100             // opcode=0b101101 SHR
++  0b000000010001101100             // opcode=0b101110 SRA
++  0b011100000000000100             // opcode=0b101111
++  0b000000100000001100             // opcode=0b110000 ADDC
++  0b000000100000101100             // opcode=0b110001 SUBC
++  0b000000100001001100             // opcode=0b110010 MULC
++  0b011100000000000100             // opcode=0b110011 DIVC (unimplemented - possible hardware-based circuit algorithms: restoring array, non-restoring array, series expansion or Newton-Raphson)
++  0b000000111001101100             // opcode=0b110100 CMPEQC
++  0b000000111010101100             // opcode=0b110101 CMPLTC
++  0b000000111011101100             // opcode=0b110110 CMPLEC
++  0b011100000000000100             // opcode=0b110111
++  0b000000101100001100             // opcode=0b111000 ANDC
++  0b000000101111001100             // opcode=0b111001 ORC
++  0b000000101011001100             // opcode=0b111010 XORC
++  0b011100000000000100             // opcode=0b111011
++  0b000000110000001100             // opcode=0b111100 SHLC
++  0b000000110000101100             // opcode=0b111101 SHRC
++  0b000000110001101100             // opcode=0b111110 SRAC
++  0b011100000000000100             // opcode=0b111111
++ )
+
+* Force WR to be reset to 0 when RESET == 1
+Xreset reset xwr 0 wr mux2
+
+* Implement logic to switch between BNE and BEQ based on the Z signal
+* For BEQ: PCSEL = z ? 1 : 0
+* For BNE: PCSEL = z ? 0 : 1
+* This is an optimized implementation with a lower theoretical area-delay product since we relay most of the computation to process the selector bit (and thus, we require less multiplexers)
+* This circuit is using 1 inverter, 1 AND4 gate, 1 XOR2 gate, 1 XNOR2 gate, 1 AND3 gate and 3 MUX2, which has a theoretical area-delay product of 81.9 ns*u^2
+* Instead of a naive approach of using 2 AND3 gates, 2 AND4 gates, 4 inverters, 6 MUX2 and 3 MUX4, which has a theoretical area-delay product of 246.48 ns*u^2 (or 230.88 ns*u^2 if we eliminate 1 inverter and 1 AND4 gate)
+Xinv_id31 id[31] not_id[31] inverter
+Xeliminate_jmp not_id[31] id[30:28] nojmp and4
+Xeliminate_ldr id[27:26] noldr xor2
+Xbranch id[26] z difference xnor2
+Xoutput nojmp noldr difference choice and3
+Xpcsel choice#3 zpcsel[2:0] 0#2 vdd pcsel[2:0] mux2
+.ends

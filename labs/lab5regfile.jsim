@@ -1,0 +1,24 @@
+// Register File Circuitry
+.subckt regfile clk werf ra2sel ra[4:0] rb[4:0] rc[4:0]
++ wdata[31:0] radata[31:0] rbdata[31:0] wasel
+
+Xregfile
++ vdd 0 0 ra[4:0] adata[31:0]       // A read port
++ vdd 0 0 ra2mux[4:0] bdata[31:0]   // B read port
++ 0 clk werf wa[4:0] wdata[31:0]    // write port
++ $memory width=32 nlocations=31
+
+* Select Rb or Rc for 2nd read port depending on RA2SEL
+Xra2sel ra2sel#5 rb[4:0] rc[4:0] ra2mux[4:0] mux2
+
+* If R31 (0b11111), use AND gate output as selector to give all 0 for radata and rbdata
+Xra_r31 ra[4:0] ra_r31 and5
+Xra2sel_r31 ra2mux[4:0] ra2sel_r31 and5
+
+* Two 2-to-1 multiplexers to output the correct radata and rbdata
+Xra_data ra_r31#32 adata[31:0] 0#32 radata[31:0] mux2
+Xrb_data ra2sel_r31#32 bdata[31:0] 0#32 rbdata[31:0] mux2
+
+* Select XP (register 30: 0b11110) as destination register file write address during exceptions (depending on WASEL)
+Xwasel wasel#5 rc[4:0] vdd#4 0 wa[4:0] mux2
+.ends

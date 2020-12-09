@@ -1,0 +1,11 @@
+// Begin Defining Utility Gates
+.subckt and5 a b c d e output
+Xand0 a b c d x and4
+Xand1 x e output and2
+.ends
+
+.subckt mux5 s2 s1 s0 a b c d e output
+Xmuxa s0 s1 a b c d z mux4
+Xmuxb s2 z e output mux2
+.ends
+// End Defining Utility Gates

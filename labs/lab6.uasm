@@ -10,7 +10,7 @@ count_bull_cows:        | Subroutine must have this name
 
     | PUSH all registers to store variables used by this subroutine
     | Technically, we do not need so many registers as specified here
-    | However, I separate the usage of each register as per their human-readable names for easier understanding of the assembly code
+    | However, I separate the usage of each register as per their human-readable names for easier understanding and better readability of the assembly code
     | For optimization purposes, a minimum of 12 registers could be used (registers 11-20 can be "combined" to only registers 11-12 as temporary registers with skillful swapping techniques)
     PUSH(R1)
     PUSH(R2)
