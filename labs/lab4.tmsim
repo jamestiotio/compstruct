@@ -35,6 +35,7 @@ result1 test7 1
 
 // Define additional symbols, states and actions
 
+// We will employ and utilize 2 states here
 // State S0: Move to the right and mark all symbols until the first ")" is found, then move to the left and unmark all symbols until the first marked "(" is found
 // State S1: Move to the left and check if everything has been matched or not
 states S0 S1 // List of state names, first is starting state

@@ -48,7 +48,7 @@
 . = VEC_KBD
 	BR(I_Kbd)	| on Keyboard interrupt
 . = VEC_MOUSE
-	BR(I_BadInt)	| on mouse interrupt
+	BR(I_Mouse)	| on mouse interrupt
 
 ||| The following macro is the first instruction to be entered for each
 ||| asynchronous I/O interrupt handler.	 It adjusts XP (the interrupted
@@ -176,7 +176,7 @@ I_Wait:	LD(UserMState+(4*30), r0)	| Grab XP from saved MState,
 
 SVC_UUO:
 	LD(XP, -4, r0)		| The faulting instruction.
-	ANDC(r0,0x7,r0)		| Pick out low bits,
+	ANDC(r0,0xF,r0)		| Pick out low bits,
 	SHLC(r0,2,r0)		| make a word index,
 	LD(r0,SVCTbl,r0)	| and fetch the table entry.
 	JMP(r0)
@@ -189,6 +189,7 @@ SVCTbl:	UUO(HaltH)		| SVC(0): User-mode HALT instruction
 	UUO(WaitH)		| SVC(5): Wait(S) ,,, S in R3
 	UUO(SignalH)		| SVC(6): Signal(S), S in R3
 	UUO(YieldH)		| SVC(7): Yield()
+	UUO(GetMouseH)     | SVC(8): Mouse()
 
 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ||| Keyboard handling
@@ -216,7 +217,7 @@ GetKeyH:				| return key code in r0, or block
 I_Kbd:	ENTER_INTERRUPT()		| Adjust the PC!
 	ST(r0, UserMState)		| Save ONLY r0...
 	RDCHAR()			| Read the character,
-	ST(r0,Key_State)		| save its code.
+	ST(r0, Key_State)		| save its code.
 	LD(UserMState, r0)		| restore r0, and
 	JMP(xp)				| and return to the user.
 
@@ -234,6 +235,36 @@ HexPrtH:
 	LD(UserMState,r0)		| Load user R0
 	CALL(KHexPrt)			| Print it out	
 	BR(I_Rtn)			| And return to user.
+
+||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+||| Mouse interrupt handling
+||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+Mouse_State: LONG(0)
+
+||| Interrupt side: read mouse click coordinates, store it into buffer.
+||| NB: This is a LIGHTWEIGHT interrupt handler, which doesn't
+|||   do a full state save.  It doesn't have to, since (1) it
+|||   only uses R0, and (2) it always returns to the same process
+|||   it interrupts.  By not saving all state, it manages
+|||   to save a LOT of time:  20 STs on entry, 30 LDs on exit:
+I_Mouse:	ENTER_INTERRUPT()		| Adjust the PC!
+	ST(r0, UserMState)		| Save ONLY r0...
+	CLICK()			| Read the coordinates,
+	ST(r0, Mouse_State)		| save its code.
+	LD(UserMState, r0)		| restore r0, and
+	| .breakpoint
+	JMP(xp)				| and return to the user.
+
+GetMouseH:				| return mouse code in r0, or block
+	LD(Mouse_State, r0)
+	BEQ(r0, I_Wait)			| on 0, just wait a while
+
+| mouse ready, return it and clear the mouse buffer
+	LD(Mouse_State, r0)		| Fetch coordinates to return
+	ST(r0,UserMState)		| return it in R0.
+	ST(r31, Mouse_State)		| Clear mouse buffer
+	BR(I_Rtn)			| and return to user.
 
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ||| Timesharing: 3-process round-robin scheduler
@@ -259,6 +290,10 @@ ProcTbl:
 	STORAGE(29)		| Process 2: R0-R28
 	LONG(P2Stack)		| Process 2: SP
 	LONG(P2Start)		| Process 2: XP (= PC)
+
+	STORAGE(29)		| Process 3: R0-R28
+	LONG(P3Stack)		| Process 3: SP
+	LONG(P3Start)       | Process 3: XP (= PC)
 
 CurProc: LONG(ProcTbl)
 
@@ -512,6 +547,7 @@ WrEnd:
 .macro HexPrt()	SVC(4)		| Hex Print the value in R0.
 
 .macro Yield()	SVC(7)		| Give up remaining quantum
+.macro Mouse()  SVC(8)		| Read a mouse click from the mouse into R0
 
 ||| Semaphore macros.
 ||| Wait(S) waits on semaphore S; Signal(S) signals on S.
@@ -717,6 +753,7 @@ P1Stack: STORAGE(256)		| Stack for process 2.
 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 P2Start:
+	| Mouse()
 	LD(Count3, r0)		| Another quantum, incr count3.
 	ADDC(r0,1,r0)
 	ST(r0,Count3)
@@ -726,3 +763,35 @@ P2Start:
 P2Stack: STORAGE(256)
 
 Count3: LONG(0)
+
+||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+||| USER MODE Process 3: Print & report mouse click messages
+||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+MouseClick: semaphore(0)
+
+P3Start:
+	Wait(MouseClick)
+	Mouse()						| Mouse macro
+	PUSH(r1)
+
+	ADDC(r0,0,r1)				| store contents of r0 (coordinate) at r1
+	SHRC(r0,16,r0)				| first 16 bits refer to x-coordinate and last 16 bits refer to y-coordinate
+								| shift right by 16 bits to eliminate and clear the y-coordinate to get only x
+
+	WrMsg()						| First a newline character, then
+	.text "\nClick at x = "
+	HexPrt()					| print the x-coordinate
+
+	SHLC(r1,16,r1)				| r1 contains the untampered xy coordinates, clear x first
+	SHRC(r1,16,r1)				| shift left then shift right to eliminate the x-coordinate (return back the y value from 15 to 0)
+	ADDC(r1,0,r0)				| store the content back at r0 as hexprt prints the content in R0
+	
+	WrMsg()
+	.text ", y = "
+	HexPrt()					| print the y-coordinate
+	Yield()
+	Signal(MouseClick)
+	BR(P3Start)					| branch back to P3Start
+
+P3Stack: STORAGE(256)

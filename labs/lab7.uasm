@@ -33,3 +33,9 @@ swapreg:
         
         restore_all_regs(regs)
         JMP(xp)
+
+LDB:
+
+
+STB:
+
