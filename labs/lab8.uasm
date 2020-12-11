@@ -240,7 +240,7 @@ HexPrtH:
 ||| Mouse interrupt handling
 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
-Mouse_State: LONG(0)
+Mouse_State: LONG(-1)
 
 ||| Interrupt side: read mouse click coordinates, store it into buffer.
 ||| NB: This is a LIGHTWEIGHT interrupt handler, which doesn't
@@ -258,12 +258,14 @@ I_Mouse:	ENTER_INTERRUPT()		| Adjust the PC!
 
 GetMouseH:				| return mouse code in r0, or block
 	LD(Mouse_State, r0)
-	BEQ(r0, I_Wait)			| on 0, just wait a while
+	CMPEQC(r0, -1, r0)
+	BNE(r0, I_Wait)			| on 0, just wait a while
 
 | mouse ready, return it and clear the mouse buffer
 	LD(Mouse_State, r0)		| Fetch coordinates to return
 	ST(r0,UserMState)		| return it in R0.
-	ST(r31, Mouse_State)		| Clear mouse buffer
+	CMOVE(-1, r1)
+	ST(r1, Mouse_State)		| Clear mouse buffer
 	BR(I_Rtn)			| and return to user.
 
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -591,6 +593,20 @@ P0Read:	Wait(Prompt)		| Wait until P1 has caught up...
 
 	LD(P0LinP, r3)		| ...then read a line into buffer...
 
+| Check if any keyboard character has been clicked, then we do not want to allow P3 to continue to print the click
+P0CheckMouseClick:
+	LD(Mouse_State, r1)	| Load Mouse_State into r1
+	CMPEQC(r1, -1, r1)	| If r1 == -1, there are no mouse clicks so go check for keyboard presses
+	BNE(r1, P0CheckKeyPress)
+	Signal(MouseClick)	| If there is a mouse click, resume P3
+	Yield()				| We want to print the next prompt
+	BR(P0Read)			| Restart P0's prompt printing
+
+| Check whether there is a character in the buffer (Key_State) -> if there is then continue, if there is none then branch back to CheckMouseClick
+P0CheckKeyPress:
+	LD(Key_State, r1)
+	BEQ(r1, P0CheckMouseClick)
+	
 P0RdCh: GetKey()		| read next character,
 
 	WrCh()			| echo back to user
@@ -771,27 +787,36 @@ Count3: LONG(0)
 MouseClick: semaphore(0)
 
 P3Start:
-	Wait(MouseClick)
 	Mouse()						| Mouse macro
-	PUSH(r1)
+	Wait(MouseClick)			| Display only when prompt has shown (Wait() reduces semaphore by 1 and it waits when semaphore is already 0)
 
-	ADDC(r0,0,r1)				| store contents of r0 (coordinate) at r1
-	SHRC(r0,16,r0)				| first 16 bits refer to x-coordinate and last 16 bits refer to y-coordinate
-								| shift right by 16 bits to eliminate and clear the y-coordinate to get only x
+	| Once Mouse() SVC returns, the mouse click coordinate is in R0 --> 0x [x-coord] [y-coord]
+	| 1. Backup a copy of original x-y coords and store at R1
+	| 1. Extract x-coordinate (high-order 16 bits, store at R0) --> 0x 0000 [x-coord]
+	| 2. Extract y-coordinate (low-order 16 bits, store from R1 to R0) --> 0x 0000 [y-coord]
+
+	| There is no need to worry about PUSH and POP since kernel already manages that (this is a process)
+
+	ADDC(r0,0,r1)				| Store contents of r0 (coordinate) at r1
+	SHRC(r0,16,r0)				| First 16 bits refer to x-coordinate and last 16 bits refer to y-coordinate
+								| Shift right by 16 bits to eliminate and clear the y-coordinate to get only x
 
 	WrMsg()						| First a newline character, then
 	.text "\nClick at x = "
-	HexPrt()					| print the x-coordinate
+	HexPrt()					| Print the x-coordinate
 
-	SHLC(r1,16,r1)				| r1 contains the untampered xy coordinates, clear x first
-	SHRC(r1,16,r1)				| shift left then shift right to eliminate the x-coordinate (return back the y value from 15 to 0)
-	ADDC(r1,0,r0)				| store the content back at r0 as hexprt prints the content in R0
-	
+	ANDC(r1,0x00FF,r0)			| r1 contains the untampered x-y coordinates, extract the y-coordinate and store the content back at r0 as hexprt prints the content in R0
+
 	WrMsg()
 	.text ", y = "
-	HexPrt()					| print the y-coordinate
-	Yield()
-	Signal(MouseClick)
-	BR(P3Start)					| branch back to P3Start
+	HexPrt()					| Print the y-coordinate
+
+	WrMsg()
+	.text "\n"
+
+	| There is no need to Yield() since it would not be able to register multiple clicks within one scheduled slot (its remaining timeslot would be given up), unless that is the intention of the process
+
+	Signal(Prompt)				| Signal() increases semaphore by 1
+	BR(P3Start)					| Branch back to P3Start
 
 P3Stack: STORAGE(256)
