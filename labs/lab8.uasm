@@ -269,7 +269,7 @@ GetMouseH:				| return mouse code in r0, or block
 	BR(I_Rtn)			| and return to user.
 
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-||| Timesharing: 3-process round-robin scheduler
+||| Timesharing: 4-process round-robin scheduler
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 ||| ProcTbl contains a 31-word data structure for each process,
@@ -512,7 +512,7 @@ WrEnd:
 	RTN()
 
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-||| User-mode code.  Includes 3 processes:
+||| User-mode code.  Includes 4 processes:
 |||
 ||| PROCESS 0:
 |||   (1) Prompts the user for new lines of input.
@@ -535,6 +535,12 @@ WrEnd:
 |||       count thus becomes a count of the number of quanta which have
 |||       been allocated to each process.  This count (in HEX) is used
 |||       as the prompt typed by process 0.
+|||
+||| PROCESS 3:
+|||   Waits for mouse clicks and prints messages which include the
+|||       coordinates of the mouse clicks.
+|||
+|||   Synchronized with the other processes using semaphores.
 |||
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
