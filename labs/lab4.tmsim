@@ -1,4 +1,4 @@
-// Lab 4: 2-States Parenthesis Matcher Turing Machine
+// Lab #4: 2-States Parenthesis Matcher Turing Machine
 // Reference implementation: https://cs.stackexchange.com/a/11058
 
 // checkoff "6004.csail.mit.edu/currentsemester/6004assignment.doit" "Lab #4" 1103641864

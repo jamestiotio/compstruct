@@ -1,3 +1,4 @@
+| Lab #6: Assembly Language (Numeric Mastermind Game - Bulls & Cows)
 | Include instruction macros and test jig
 .include ../lib/beta.uasm
 .include ../lib/lab6checkoff.uasm

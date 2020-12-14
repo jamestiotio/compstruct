@@ -1,4 +1,4 @@
-* Lab 3: Arithmetic Logic Unit (ALU)
+* Lab #3: Arithmetic Logic Unit (ALU)
 
 .include "../lib/nominal.jsim"
 .include "../lib/stdcell.jsim"

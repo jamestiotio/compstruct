@@ -1,4 +1,4 @@
-* Lab 5: 32-Bit Beta CPU RISC-V Architecture Design
+* Lab #5: 32-Bit Beta CPU RISC-V Architecture Design
 * All of the components have been equipped with their proper respective support for transfers of control, connected by the Beta's datapath (this ensures that the whole Beta checkoff passes, even if individual component checkoffs do not pass anymore due to the additional arguments)
 * Memory Unit (ROM & RAM) is not included here since it is supplied by lab5checkoff.jsim (both instruction memory and data memory)
 

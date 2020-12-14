@@ -1,4 +1,4 @@
-* Lab 1: CMOS Logic Gate Design Using MOSFETs
+* Lab #1: CMOS Logic Gate Design Using MOSFETs
 
 .include "../lib/nominal.jsim"
 .include "../lib/lab1checkoff.jsim"
