@@ -189,7 +189,7 @@ SVCTbl:	UUO(HaltH)		| SVC(0): User-mode HALT instruction
 	UUO(WaitH)		| SVC(5): Wait(S) ,,, S in R3
 	UUO(SignalH)		| SVC(6): Signal(S), S in R3
 	UUO(YieldH)		| SVC(7): Yield()
-	UUO(GetMouseH)     | SVC(8): Mouse()
+	UUO(GetMouseH)		| SVC(8): Mouse()
 
 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ||| Keyboard handling
@@ -248,9 +248,10 @@ Mouse_State: LONG(-1)
 |||   only uses R0, and (2) it always returns to the same process
 |||   it interrupts.  By not saving all state, it manages
 |||   to save a LOT of time:  20 STs on entry, 30 LDs on exit:
-I_Mouse:	ENTER_INTERRUPT()		| Adjust the PC!
+I_Mouse:
+	ENTER_INTERRUPT()		| Adjust the PC!
 	ST(r0, UserMState)		| Save ONLY r0...
-	CLICK()			| Read the coordinates,
+	CLICK()				| Read the coordinates,
 	ST(r0, Mouse_State)		| save its code.
 	LD(UserMState, r0)		| restore r0, and
 	| .breakpoint
@@ -295,7 +296,7 @@ ProcTbl:
 
 	STORAGE(29)		| Process 3: R0-R28
 	LONG(P3Stack)		| Process 3: SP
-	LONG(P3Start)       | Process 3: XP (= PC)
+	LONG(P3Start)		| Process 3: XP (= PC)
 
 CurProc: LONG(ProcTbl)
 
@@ -426,8 +427,8 @@ SignalH:LD(r3,0,r0)		| Fetch semaphore value.
 
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ||| Kernel-callable Utility Routines
-||| NB: These routines use PRIVILEDGED instructions; hence they can be
-|||  called directly only from kernel code (ie, with the high-PC-bit
+||| NB: These routines use PRIVILEGED instructions; hence they can be
+|||  called directly only from kernel code (i.e., with the high-PC-bit
 |||  set).  Use SVC traps to accomplish the same functions from user-
 |||  level code.
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -466,7 +467,7 @@ KHexPr1:
 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ||| Procedure to print out a zero-terminated message, packed one     |||
 |||    char/byte. Char data follows branch; returns to next 4-byte   |||
-|||    aligned location. Saves all regs.			     |||
+|||    aligned location. Saves all regs.                             |||
 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 KWrMsg:
@@ -794,7 +795,7 @@ MouseClick: semaphore(0)
 
 P3Start:
 	Mouse()						| Mouse macro
-	Wait(MouseClick)			| Display only when prompt has shown (Wait() reduces semaphore by 1 and it waits when semaphore is already 0)
+	Wait(MouseClick)				| Display only when prompt has shown (Wait() reduces semaphore by 1 and it waits when semaphore is already 0)
 
 	| Once Mouse() SVC returns, the mouse click coordinate is in R0 --> 0x [x-coord] [y-coord]
 	| 1. Backup a copy of original x-y coords and store at R1
@@ -803,15 +804,15 @@ P3Start:
 
 	| There is no need to worry about PUSH and POP since kernel already manages that (this is a process)
 
-	ADDC(r0,0,r1)				| Store contents of r0 (coordinate) at r1
-	SHRC(r0,16,r0)				| First 16 bits refer to x-coordinate and last 16 bits refer to y-coordinate
-								| Shift right by 16 bits to eliminate and clear the y-coordinate to get only x
+	ADDC(r0,0,r1)					| Store contents of r0 (coordinate) at r1
+	SHRC(r0,16,r0)					| First 16 bits refer to x-coordinate and last 16 bits refer to y-coordinate
+							| Shift right by 16 bits to eliminate and clear the y-coordinate to get only x
 
 	WrMsg()						| First a newline character, then
 	.text "\nClick at x = "
 	HexPrt()					| Print the x-coordinate
 
-	ANDC(r1,0x00FF,r0)			| r1 contains the untampered x-y coordinates, extract the y-coordinate and store the content back at r0 as hexprt prints the content in R0
+	ANDC(r1,0x00FF,r0)				| r1 contains the untampered x-y coordinates, extract the y-coordinate and store the content back at r0 as hexprt prints the content in R0
 
 	WrMsg()
 	.text ", y = "
@@ -822,7 +823,7 @@ P3Start:
 
 	| There is no need to Yield() since it would not be able to register multiple clicks within one scheduled slot (its remaining timeslot would be given up), unless that is the intention of the process
 
-	Signal(Prompt)				| Signal() increases semaphore by 1
+	Signal(Prompt)					| Signal() increases semaphore by 1
 	BR(P3Start)					| Branch back to P3Start
 
 P3Stack: STORAGE(256)
