@@ -606,8 +606,8 @@ P0CheckMouseClick:
 	CMPEQC(r1, -1, r1)	| If r1 == -1, there are no mouse clicks so go check for keyboard presses
 	BNE(r1, P0CheckKeyPress)
 	Signal(MouseClick)	| If there is a mouse click, resume P3
-	Yield()				| We want to print the next prompt
-	BR(P0Read)			| Restart P0's prompt printing
+	Yield()			| We want to print the next prompt
+	BR(P0Read)		| Restart P0's prompt printing
 
 | Check whether there is a character in the buffer (Key_State) -> if there is then continue, if there is none then branch back to CheckMouseClick
 P0CheckKeyPress:
