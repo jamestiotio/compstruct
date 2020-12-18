@@ -124,35 +124,49 @@ stb:
         CMPEQC(r2, 3, r6)                       | if EA[1:0] = 0b11 then MDATA[31:24]
         BT(r6, stb_if_11)
 
+        | We need to preserve the irrelevant bits of MDATA and only overwrite the corresponding byte.
+        | A naive implementation would be to try executing an ANDC instruction, followed by an OR instruction.
+        | However, for stb_if_01, stb_if_10 and stb_if_11, we cannot simply do an ANDC instruction
+        | with 0xFFFF00FF, 0xFF00FFFF, and 0x00FFFFFF respectively because of two reasons:
+        | 1. The 32-bit instruction data can only fit a 16-bit literal, not a 32-bit literal.
+        | 2. The 16-bit literal would then be sign-extended, overwriting anything else that
+        | was written on the higher 16-bits.
+        | Thus, we need to do some more convoluted and complex bit manipulation and maneuvering using
+        | some temporary registers in order to do what we want to do and just to get what we want.
+        | Such is life.
+
         stb_if_00:
-                ANDC(r4, 0xFF00, r4)
+                ANDC(r4, 0xFF00, r4)            | Automatically sign-extended to 0xFFFFFF00 (actual mask filter)
                 OR(r4, r5, r4)
                 BR(end_stb)
-        
+
         stb_if_01:
-                SHLC(r5, 8, r5)
-                CMOVE(0xFF00, r7)
-                SHLC(r7, 8, r7)
-                ORC(r7, 0x00FF, r7)
+                SHLC(r5, 8, r5)                 | Prep Reg[Rc][7:0] as MDATA[15:8]
+                CMOVE(0xFF00, r7)               | Automatically sign-extended to 0xFFFFFF00
+                SHLC(r7, 8, r7)                 | r7 = 0xFFFF0000
+                ORC(r7, 0x00FF, r7)             | r7 = 0xFFFF00FF (actual mask filter)
+
                 AND(r4, r7, r4)
                 OR(r4, r5, r4)
                 BR(end_stb)
 
         stb_if_10:
-                SHLC(r5, 16, r5)
-                CMOVE(0xFF00, r7)
-                SHLC(r7, 16, r7)
-                ADDC(r31, 0xFFFF, r8)
-                extract_field(r8, 15, 0, r9)
-                OR(r7, r9, r7)
-                AND(r4, r15, r4)
+                SHLC(r5, 16, r5)                | Prep Reg[Rc][7:0] as MDATA[23:16]
+                CMOVE(0xFF00, r7)               | Automatically sign-extended to 0xFFFFFF00
+                SHLC(r7, 16, r7)                | r7 = 0xFF000000
+                CMOVE(0xFFFF, r8)               | r8 = 0xFFFFFFFF (automatically sign-extended)
+                extract_field(r8, 15, 0, r8)    | r8 = 0x0000FFFF
+                OR(r7, r8, r7)                  | r7 = 0xFF00FFFF (actual mask filter)
+
+                AND(r4, r7, r4)
                 OR(r4, r5, r4)
                 BR(end_stb)
 
         stb_if_11:
-                SHLC(r5, 24, r5) 
-                ORC(r31, 0xFFFF, r7)   
-                SHRC(r7, 8, r7)
+                SHLC(r5, 24, r5)                | Prep Reg[Rc][7:0] as MDATA[31:24]
+                CMOVE(0xFFFF, r7)               | Automatically sign-extended to 0xFFFFFFFF
+                SHRC(r7, 8, r7)                 | r7 = 0x00FFFFFF (actual mask filter)
+
                 AND(r4, r7, r4)
                 OR(r4, r5, r4)
                 BR(end_stb)
