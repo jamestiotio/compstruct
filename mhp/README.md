@@ -4,11 +4,11 @@ SUTD ISTD 2020 Computation Structures Mini Hardware Project: 1-Bit Full Adder & 
 
 Team 03-2:
 
-- James Raphael Tiovalen
-- Ng Yu Yan
+- [James Raphael Tiovalen](https://github.com/jamestiotio) (Team Leader)
+- [Ng Yu Yan](https://github.com/ngyy3487)
+- [Sun Kairan](https://github.com/kairanskrr)
+- [Cheow Wei Da Nicholas](https://github.com/nicholascwd)
 - Jodi Tan Kai Yu
-- Cheow Wei Da Nicholas
-- Sun Kairan
 
 [Poster](poster.pdf) and [schematics](schematics/schematics.png) are included in this repository. You can watch our video [here](https://youtu.be/cUwy_Xbg1K8).
 
