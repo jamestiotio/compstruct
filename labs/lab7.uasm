@@ -4,174 +4,174 @@
 .include ../lib/lab7checkoff.uasm
 
 .macro SEXT(ra, m, rb) {
-        SHLC(ra, 31-m, rb)
-        SRAC(rb, 31-m, rb)
+    SHLC(ra, 31-m, rb)
+    SRAC(rb, 31-m, rb)
 }
 
-regs:   RESERVE(32)                             | Array used to store register contents
+regs:   RESERVE(32)                     | Array used to store register contents
 
-UI: 
-        save_all_regs(regs)
- 
-        LD(xp,-4,r0)                            | illegal instruction
-        extract_field(r0, 31, 26, r1)           | extract opcode, bits 31:26
+UI:
+    save_all_regs(regs)
 
-        CMPEQC(r1,0x1,r2)                       | OPCODE=1?
-        BT(r2, swapreg)                         | yes, handle the swapreg instruction.
+    LD(xp,-4,r0)                        | illegal instruction
+    extract_field(r0, 31, 26, r1)       | extract opcode, bits 31:26
 
-        CMPEQC(r1,0x10,r2)                      | OPCODE=010000?
-        BT(r2, ldb)                             | yes, handle the ldb instruction.
+    CMPEQC(r1,0x1,r2)                   | OPCODE=1?
+    BT(r2, swapreg)                     | yes, handle the swapreg instruction.
 
-        CMPEQC(r1,0x11,r2)                      | OPCODE=010001?
-        BT(r2, stb)                             | yes, handle the stb instruction.
+    CMPEQC(r1,0x10,r2)                  | OPCODE=010000?
+    BT(r2, ldb)                         | yes, handle the ldb instruction.
 
-        LD(r31,regs,r0)                         | It's something else. Restore regs
-        LD(r31,regs+4,r1)                       | we've used, and go to the system's
-        LD(r31,regs+8,r2)                       | Illegal Instruction handler.
-        BR(_IllegalInstruction)
+    CMPEQC(r1,0x11,r2)                  | OPCODE=010001?
+    BT(r2, stb)                         | yes, handle the stb instruction.
+
+    LD(r31,regs,r0)                     | It's something else. Restore regs
+    LD(r31,regs+4,r1)                   | we've used, and go to the system's
+    LD(r31,regs+8,r2)                   | Illegal Instruction handler.
+    BR(_IllegalInstruction)
 
 ||| Handler for opcode 1 extension:
 ||| swapreg(RA,RC) swaps the contents of the two named registers.
 ||| UASM defn = .macro swapreg(RA,RC) betaopc(0x01,RA,0,RC)
 
 swapreg:
-        extract_field(r0, 25, 21, r1)           | extract rc field
-        MULC(r1, 4, r1)                         | convert to byte offset into regs array
-        extract_field(r0, 20, 16, r2)           | extract ra field
-        MULC(r2, 4, r2)                         | convert to byte offset into regs array
-        LD(r1, regs, r3)                        | r3 <- regs[rc]
-        LD(r2, regs, r4)                        | r4 <- regs[ra]
-        ST(r4, regs, r1)                        | regs[rc] <- old regs[ra]
-        ST(r3, regs, r2)                        | regs[ra] <- old regs[rc]
-        
-        restore_all_regs(regs)
-        JMP(xp)
+    extract_field(r0, 25, 21, r1)       | extract rc field
+    MULC(r1, 4, r1)                     | convert to byte offset into regs array
+    extract_field(r0, 20, 16, r2)       | extract ra field
+    MULC(r2, 4, r2)                     | convert to byte offset into regs array
+    LD(r1, regs, r3)                    | r3 <- regs[rc]
+    LD(r2, regs, r4)                    | r4 <- regs[ra]
+    ST(r4, regs, r1)                    | regs[rc] <- old regs[ra]
+    ST(r3, regs, r2)                    | regs[ra] <- old regs[rc]
+    
+    restore_all_regs(regs)
+    JMP(xp)
 
 ||| Handler for opcode 010000
 ||| LDB: load operations for byte (8-bits) data
 
 ldb:
-        extract_field(r0, 25, 21, r1)           | extract rc field
-        extract_field(r0, 20, 16, r2)           | extract ra field
-        extract_field(r0, 15, 0, r3)            | extract literal
+    extract_field(r0, 25, 21, r1)       | extract rc field
+    extract_field(r0, 20, 16, r2)       | extract ra field
+    extract_field(r0, 15, 0, r3)        | extract literal
 
-        MULC(r1, 4, r1)                         | convert to byte offset into regs array
-        MULC(r2, 4, r2)                         | convert to byte offset into regs array
+    MULC(r1, 4, r1)                     | convert to byte offset into regs array
+    MULC(r2, 4, r2)                     | convert to byte offset into regs array
 
-        LD(r2, regs, r4)                        | r4 <- regs[ra]
-        SEXT(r3, 15, r3)                        | sign-extend the literal to 32 bits
-        ADD(r4, r3, r3)                         | EA <- Reg[Ra] + SEXT(literal)
-        LD(r3, 0, r4)                           | MDATA <- Mem[EA]
+    LD(r2, regs, r4)                    | r4 <- regs[ra]
+    SEXT(r3, 15, r3)                    | sign-extend the literal to 32 bits
+    ADD(r4, r3, r3)                     | EA <- Reg[Ra] + SEXT(literal)
+    LD(r3, 0, r4)                       | MDATA <- Mem[EA]
 
-        extract_field(r3, 1, 0, r2)             | extract EA[1:0] field
+    extract_field(r3, 1, 0, r2)         | extract EA[1:0] field
 
-        CMPEQC(r2, 0, r5)                       | if EA[1:0] = 0b00 then MDATA[7:0]
-        BT(r5, ldb_if_00)
-        CMPEQC(r2, 1, r5)                       | if EA[1:0] = 0b01 then MDATA[15:8]
-        BT(r5, ldb_if_01)
-        CMPEQC(r2, 2, r5)                       | if EA[1:0] = 0b10 then MDATA[23:16]
-        BT(r5, ldb_if_10)
-        CMPEQC(r2, 3, r5)                       | if EA[1:0] = 0b11 then MDATA[31:24]
-        BT(r5, ldb_if_11)
+    CMPEQC(r2, 0, r5)                   | if EA[1:0] = 0b00 then MDATA[7:0]
+    BT(r5, ldb_if_00)
+    CMPEQC(r2, 1, r5)                   | if EA[1:0] = 0b01 then MDATA[15:8]
+    BT(r5, ldb_if_01)
+    CMPEQC(r2, 2, r5)                   | if EA[1:0] = 0b10 then MDATA[23:16]
+    BT(r5, ldb_if_10)
+    CMPEQC(r2, 3, r5)                   | if EA[1:0] = 0b11 then MDATA[31:24]
+    BT(r5, ldb_if_11)
 
-        ldb_if_00:
-                extract_field(r4, 7, 0, r4)     | extract MDATA[7:0] field
-                BR(end_ldb)
-        
-        ldb_if_01:
-                extract_field(r4, 15, 8, r4)    | extract MDATA[15:8] field
-                BR(end_ldb)
+    ldb_if_00:
+        extract_field(r4, 7, 0, r4)     | extract MDATA[7:0] field
+        BR(end_ldb)
+    
+    ldb_if_01:
+        extract_field(r4, 15, 8, r4)    | extract MDATA[15:8] field
+        BR(end_ldb)
 
-        ldb_if_10:
-                extract_field(r4, 23, 16, r4)   | extract MDATA[23:16] field
-                BR(end_ldb)
+    ldb_if_10:
+        extract_field(r4, 23, 16, r4)   | extract MDATA[23:16] field
+        BR(end_ldb)
 
-        ldb_if_11:
-                extract_field(r4, 31, 24, r4)   | extract MDATA[31:24] field
-                BR(end_ldb)
+    ldb_if_11:
+        extract_field(r4, 31, 24, r4)   | extract MDATA[31:24] field
+        BR(end_ldb)
 
-        end_ldb:
-                ST(r4, regs, r1)                | store 8-bits MDATA
-                restore_all_regs(regs)
-                JMP(xp)
+    end_ldb:
+        ST(r4, regs, r1)                | store 8-bits MDATA
+        restore_all_regs(regs)
+        JMP(xp)
 
 ||| Handler for opcode 010001
 ||| STB: store operations for byte (8-bits) data
 
 stb:
-        extract_field(r0, 25, 21, r1)           | extract rc field
-        extract_field(r0, 20, 16, r2)           | extract ra field
-        extract_field(r0, 15, 0, r3)            | extract literal
+    extract_field(r0, 25, 21, r1)       | extract rc field
+    extract_field(r0, 20, 16, r2)       | extract ra field
+    extract_field(r0, 15, 0, r3)        | extract literal
 
-        MULC(r1, 4, r1)                         | convert to byte offset into regs array
-        MULC(r2, 4, r2)                         | convert to byte offset into regs array
+    MULC(r1, 4, r1)                     | convert to byte offset into regs array
+    MULC(r2, 4, r2)                     | convert to byte offset into regs array
 
-        LD(r2, regs, r4)                        | r4 <- regs[ra]
-        SEXT(r3, 15, r3)                        | sign-extend the literal to 32 bits
-        ADD(r4, r3, r3)                         | EA <- Reg[Ra] + SEXT(literal)
-        LD(r3, 0, r4)                           | MDATA <- Mem[EA]
-        LD(r1, regs, r5)                        | r5 <- regs[rc]
+    LD(r2, regs, r4)                    | r4 <- regs[ra]
+    SEXT(r3, 15, r3)                    | sign-extend the literal to 32 bits
+    ADD(r4, r3, r3)                     | EA <- Reg[Ra] + SEXT(literal)
+    LD(r3, 0, r4)                       | MDATA <- Mem[EA]
+    LD(r1, regs, r5)                    | r5 <- regs[rc]
 
-        extract_field(r3, 1, 0, r2)             | extract EA[1:0] field
-        extract_field(r5, 7, 0, r5)             | extract Reg[Rc][7:0] field
+    extract_field(r3, 1, 0, r2)         | extract EA[1:0] field
+    extract_field(r5, 7, 0, r5)         | extract Reg[Rc][7:0] field
 
-        CMPEQC(r2, 0, r6)                       | if EA[1:0] = 0b00 then MDATA[7:0]
-        BT(r6, stb_if_00)
-        CMPEQC(r2, 1, r6)                       | if EA[1:0] = 0b01 then MDATA[15:8]
-        BT(r6, stb_if_01)
-        CMPEQC(r2, 2, r6)                       | if EA[1:0] = 0b10 then MDATA[23:16]
-        BT(r6, stb_if_10)
-        CMPEQC(r2, 3, r6)                       | if EA[1:0] = 0b11 then MDATA[31:24]
-        BT(r6, stb_if_11)
+    CMPEQC(r2, 0, r6)                   | if EA[1:0] = 0b00 then MDATA[7:0]
+    BT(r6, stb_if_00)
+    CMPEQC(r2, 1, r6)                   | if EA[1:0] = 0b01 then MDATA[15:8]
+    BT(r6, stb_if_01)
+    CMPEQC(r2, 2, r6)                   | if EA[1:0] = 0b10 then MDATA[23:16]
+    BT(r6, stb_if_10)
+    CMPEQC(r2, 3, r6)                   | if EA[1:0] = 0b11 then MDATA[31:24]
+    BT(r6, stb_if_11)
 
-        | We need to preserve the irrelevant bits of MDATA and only overwrite the corresponding byte.
-        | A naive implementation would be to try executing an ANDC instruction, followed by an OR instruction.
-        | However, for stb_if_01, stb_if_10 and stb_if_11, we cannot simply do an ANDC instruction
-        | with 0xFFFF00FF, 0xFF00FFFF, and 0x00FFFFFF respectively because of two reasons:
-        | 1. The 32-bit instruction data can only fit a 16-bit literal, not a 32-bit literal.
-        | 2. The 16-bit literal would then be sign-extended, overwriting anything else that
-        | was written on the higher 16-bits.
-        | Thus, we need to do some more convoluted and complex bit manipulation and maneuvering using
-        | some temporary registers in order to do what we want to do and just to get what we want.
-        | Such is life.
+    | We need to preserve the irrelevant bits of MDATA and only overwrite the corresponding byte.
+    | A naive implementation would be to try executing an ANDC instruction, followed by an OR instruction.
+    | However, for stb_if_01, stb_if_10 and stb_if_11, we cannot simply do an ANDC instruction
+    | with 0xFFFF00FF, 0xFF00FFFF, and 0x00FFFFFF respectively because of two reasons:
+    | 1. The 32-bit instruction data can only fit a 16-bit literal, not a 32-bit literal.
+    | 2. The 16-bit literal would then be sign-extended, overwriting anything else that
+    | was written on the higher 16-bits.
+    | Thus, we need to do some more convoluted and complex bit manipulation and maneuvering using
+    | some temporary registers in order to do what we want to do and just to get what we want.
+    | Such is life.
 
-        stb_if_00:
-                ANDC(r4, 0xFF00, r4)            | Automatically sign-extended to 0xFFFFFF00 (actual mask filter)
-                OR(r4, r5, r4)
-                BR(end_stb)
+    stb_if_00:
+        ANDC(r4, 0xFF00, r4)            | Automatically sign-extended to 0xFFFFFF00 (actual mask filter)
+        OR(r4, r5, r4)
+        BR(end_stb)
 
-        stb_if_01:
-                SHLC(r5, 8, r5)                 | Prep Reg[Rc][7:0] as MDATA[15:8]
-                CMOVE(0xFF00, r7)               | Automatically sign-extended to 0xFFFFFF00
-                SHLC(r7, 8, r7)                 | r7 = 0xFFFF0000
-                ORC(r7, 0x00FF, r7)             | r7 = 0xFFFF00FF (actual mask filter)
+    stb_if_01:
+        SHLC(r5, 8, r5)                 | Prep Reg[Rc][7:0] as MDATA[15:8]
+        CMOVE(0xFF00, r7)               | Automatically sign-extended to 0xFFFFFF00
+        SHLC(r7, 8, r7)                 | r7 = 0xFFFF0000
+        ORC(r7, 0x00FF, r7)             | r7 = 0xFFFF00FF (actual mask filter)
 
-                AND(r4, r7, r4)
-                OR(r4, r5, r4)
-                BR(end_stb)
+        AND(r4, r7, r4)
+        OR(r4, r5, r4)
+        BR(end_stb)
 
-        stb_if_10:
-                SHLC(r5, 16, r5)                | Prep Reg[Rc][7:0] as MDATA[23:16]
-                CMOVE(0xFF00, r7)               | Automatically sign-extended to 0xFFFFFF00
-                SHLC(r7, 16, r7)                | r7 = 0xFF000000
-                CMOVE(0xFFFF, r8)               | r8 = 0xFFFFFFFF (automatically sign-extended)
-                extract_field(r8, 15, 0, r8)    | r8 = 0x0000FFFF
-                OR(r7, r8, r7)                  | r7 = 0xFF00FFFF (actual mask filter)
+    stb_if_10:
+        SHLC(r5, 16, r5)                | Prep Reg[Rc][7:0] as MDATA[23:16]
+        CMOVE(0xFF00, r7)               | Automatically sign-extended to 0xFFFFFF00
+        SHLC(r7, 16, r7)                | r7 = 0xFF000000
+        CMOVE(0xFFFF, r8)               | r8 = 0xFFFFFFFF (automatically sign-extended)
+        extract_field(r8, 15, 0, r8)    | r8 = 0x0000FFFF
+        OR(r7, r8, r7)                  | r7 = 0xFF00FFFF (actual mask filter)
 
-                AND(r4, r7, r4)
-                OR(r4, r5, r4)
-                BR(end_stb)
+        AND(r4, r7, r4)
+        OR(r4, r5, r4)
+        BR(end_stb)
 
-        stb_if_11:
-                SHLC(r5, 24, r5)                | Prep Reg[Rc][7:0] as MDATA[31:24]
-                CMOVE(0xFFFF, r7)               | Automatically sign-extended to 0xFFFFFFFF
-                SHRC(r7, 8, r7)                 | r7 = 0x00FFFFFF (actual mask filter)
+    stb_if_11:
+        SHLC(r5, 24, r5)                | Prep Reg[Rc][7:0] as MDATA[31:24]
+        CMOVE(0xFFFF, r7)               | Automatically sign-extended to 0xFFFFFFFF
+        SHRC(r7, 8, r7)                 | r7 = 0x00FFFFFF (actual mask filter)
 
-                AND(r4, r7, r4)
-                OR(r4, r5, r4)
-                BR(end_stb)
+        AND(r4, r7, r4)
+        OR(r4, r5, r4)
+        BR(end_stb)
 
-        end_stb:
-                ST(r4, 0, r3)                   | Mem[EA] <- MDATA
-                restore_all_regs(regs)
-                JMP(xp)
+    end_stb:
+        ST(r4, 0, r3)                   | Mem[EA] <- MDATA
+        restore_all_regs(regs)
+        JMP(xp)
