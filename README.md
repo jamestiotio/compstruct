@@ -1,4 +1,7 @@
 # compstruct
+
+*"From Transistors to the Operating System."*
+
 SUTD 2020 50.002 Computation Structures Code Dump
 
 ## Future Addons
