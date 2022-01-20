@@ -132,7 +132,7 @@ count_bull_cows:        | Subroutine must have this name
 
     return_output:
         SHLC(bulls, 4, shifted_bulls)
-        ADD(shifted_bulls, cows, R0)                                | Put output in R0
+        ADD(shifted_bulls, cows, R0)                                | Put output in R0 to conform to the specified ABI
 
     end_of_output:  | Pass
 
