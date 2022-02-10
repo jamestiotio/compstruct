@@ -6,11 +6,14 @@
 
 * F(A, B, C) = C + A·B
 .subckt F A B C Z
+* Not F CMOS circuitry: Pulldown
 MPD1 Q A 1 0 NENH sw=8 sl=1
 MPD2 1 B 0 0 NENH sw=8 sl=1
 MPD3 Q C 0 0 NENH sw=8 sl=1
+* Not F CMOS circuitry: Pullup
 MPU1 Q A 2 vdd PENH sw=10 sl=1
 MPU2 Q B 2 vdd PENH sw=10 sl=1
 MPU3 2 C vdd vdd PENH sw=10 sl=1
+* Inverter
 Xinv0 Q Z inv
 .ends
