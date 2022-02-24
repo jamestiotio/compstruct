@@ -3,6 +3,12 @@
 .include "../lib/nominal.jsim"
 .include "../lib/stdcell.jsim"
 
+* .include "../lib/lab3_test_adder.jsim"
+* .include "../lib/lab3_test_cmp.jsim"
+* .include "../lib/lab3_test_bool.jsim"
+* .include "../lib/lab3_test_shift.jsim"
+* .include "../lib/lab3_test_mult.jsim"
+
 * When only checking off for Lab #3 (and not Lab #5), remember to uncomment this line below
 // .include "../lib/lab3checkoff_10.jsim"
 
