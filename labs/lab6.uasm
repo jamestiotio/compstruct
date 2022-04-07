@@ -77,14 +77,14 @@ count_bull_cows:        | Subroutine must have this name
         ADDC(bulls, 1, bulls)                           | bulls = bulls + 1
         OR(a, mask, a)                                  | a |= mask
         OR(b, mask, b)                                  | b |= mask
-        
+
         bull_mask_shift:
             SHLC(mask, 4, mask)                         | mask <<= 4
-        
+
         ADDC(i, 1, i)                                   | i++
         CMPLTC(i, 4, iterator_less_than_4)              | Check if iterator i < 4
         BNE(iterator_less_than_4, count_bulls)          | If iterator_less_than_4 == 1, run count_bulls again
-    
+
     | Re-initialize iterator value
     CMOVE(0, i)
 
@@ -113,7 +113,7 @@ count_bull_cows:        | Subroutine must have this name
 
             cow_mask_shift:
                 SHLC(mask, 4, mask)                     | mask <<= 4
-            
+
             ADDC(j, 1, j)                               | j++
             CMPLTC(j, 4, inner_iterator_less_than_4)    | Check if iterator j < 4
             BNE(inner_iterator_less_than_4, iterative_cow_check)    | If inner_iterator_less_than_4 == 1, run iterative_cow_check again
